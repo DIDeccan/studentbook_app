@@ -1,0 +1,46 @@
+import { StyleSheet, Text, View, Image } from 'react-native';
+import React,{useEffect} from 'react';
+import { SW, SH } from '../../utils/dimensions';
+import { loginImg, Spalsh_Logo } from '../../images/index.js';
+import ContainerComponent from '../../components/commonComponents/Container.js';
+
+
+const SplashScreen = ({navigation}) => {
+  
+   useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.replace('SwipperScreen');
+    }, 3000);
+
+    return () => clearTimeout(timer); // cleanup
+  }, [navigation]);
+  return (
+    <ContainerComponent>
+      <View style={styles.setbgimage}>
+        <View>
+          <Image
+            style={styles.valuxlogoimg}
+            resizeMode="contain"
+            source={loginImg}
+          />
+        </View>
+      </View>
+    </ContainerComponent>
+  );
+};
+
+export default SplashScreen;
+
+const styles = StyleSheet.create({
+  valuxlogoimg: {
+    width: SW(200),
+    height: SH(200),
+    resizeMode:'contain'
+  },
+  setbgimage: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

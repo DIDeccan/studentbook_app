@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "614317515535",
+    "project_id": "student-book-d57f0",
+    "storage_bucket": "student-book-d57f0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:614317515535:android:44d62df8c39464a86f947a",
+        "android_client_info": {
+          "package_name": "com.studentbook"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRurLZTQQm8VJMg8xPYh0BiXFfvXwJNhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
