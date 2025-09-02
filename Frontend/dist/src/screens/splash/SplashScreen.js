@@ -3,17 +3,27 @@ import React,{useEffect} from 'react';
 import { SW, SH } from '../../utils/dimensions';
 import { loginImg, Spalsh_Logo } from '../../images/index.js';
 import ContainerComponent from '../../components/commonComponents/Container.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSelector } from 'react-redux';
 
 
 const SplashScreen = ({navigation}) => {
-  
+  const token = useSelector((state) => state.auth.token);
+  const intialPage = async()=>{
+  let isPaid = await AsyncStorage.getItem('isPaid')
+console.log(isPaid,"ispaid")
+    }
+      useEffect(()=>{
+      intialPage()
+      console.log("topken",token)
+    })
    useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('SwipperScreen');
     }, 3000);
-
     return () => clearTimeout(timer); // cleanup
   }, [navigation]);
+
   return (
     <ContainerComponent>
       <View style={styles.setbgimage}>

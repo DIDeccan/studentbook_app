@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,18 +14,60 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import ContainerComponent from '../../components/commonComponents/Container';
-import { userProfile } from '../../images';
 import { SF, SH, SW } from '../../utils/dimensions';
+import { useDispatch, useSelector } from 'react-redux';
+import { getProfile, updateProfile } from '../../redux/reducer/profileReducer';
 
 const EditProfile = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [profileImage, setProfileImage] = useState(userProfile);
+  const dispatch = useDispatch()
+  const getProfileData = useSelector((state)=> state.profile.getProfileData)
+  const [name, setName] = useState(getProfileData?.first_name);
+  const [email, setEmail] = useState(getProfileData?.email);
+  const [phone, setPhone] = useState(getProfileData?.phone_number);
+  const [profileImage, setProfileImage] = useState(null);
+const[studentClass,setStudentClass] = useState(getProfileData?.student_class)
+//console.log(getProfileData,"===========ger---------")
 
-  const handleSave = () => {
+
+  useEffect(()=>{
+    dispatch(getProfile())
+  },[dispatch])
+
+  useEffect(() => {
+    if (getProfileData) {
+      setName(getProfileData.first_name || '');
+      setEmail(getProfileData.email || '');
+      setPhone(getProfileData.phone_number || '');
+      setProfileImage(getProfileData.profile_image || '');
+      setStudentClass(getProfileData.student_class?.toString() || '');
+    }
+  }, [getProfileData]);
+
+  const handleSave = async() => {
     console.log('Profile Saved', { name, email, phone, profileImage });
-  };
+try {
+    await dispatch(updateProfile({
+      email,
+      first_name: name,
+      last_name: 'vasu',
+      school: null,
+      profile_image: profileImage, // must be handled as FormData in API call
+      is_active: true,
+      phone_number: phone,
+      address: null,
+      city: '',
+      state: null,
+      zip_code: '',
+      user_type: 'student',
+      student_class: studentClass,
+      student_packages: []
+    })).unwrap();
+    // ✅ fetch profile only after successful update
+    dispatch(getProfile());
+  } catch (error) {
+    console.log('Update failed:', error);
+  }
+};
 
   // Permission handler
   const requestStoragePermission = async () => {
@@ -65,7 +107,8 @@ const EditProfile = () => {
             if (!hasPermission) return;
             launchCamera({ mediaType: 'photo' }, (response) => {
               if (response.assets && response.assets.length > 0) {
-                setProfileImage({ uri: response.assets[0].uri });
+               // setProfileImage({ uri: response.assets[0].uri });
+                setProfileImage(response.assets[0].uri);
               }
             });
           },
@@ -77,7 +120,8 @@ const EditProfile = () => {
             if (!hasPermission) return;
             launchImageLibrary({ mediaType: 'photo' }, (response) => {
               if (response.assets && response.assets.length > 0) {
-                setProfileImage({ uri: response.assets[0].uri });
+               // setProfileImage({ uri: response.assets[0].uri });
+                 setProfileImage(response.assets[0].uri);
               }
             });
           },
@@ -92,7 +136,12 @@ const EditProfile = () => {
       <ScrollView style={styles.container}>
         {/* Profile Image with Edit Icon */}
         <View style={styles.profileContainer}>
-          <Image source={profileImage} style={styles.profileImage} />
+
+<Image
+  source={{ uri: profileImage || 'https://static.vecteezy.com/system/resources/previews/058/338/462/non_2x/generic-profile-picture-placeholder-default-user-profile-image-vector.jpg' }}
+  style={styles.profileImage}
+/>
+          {/* <Image source={{uri:getProfileData?.profile_image ? getProfileData.profile_image:'https://static.vecteezy.com/system/resources/previews/058/338/462/non_2x/generic-profile-picture-placeholder-default-user-profile-image-vector.jpg'}} resizeMode='cover' style={styles.profileImage} /> */}
           <TouchableOpacity style={styles.editIcon} onPress={chooseImage}>
             <MaterialIcons name="edit" size={22} color="#fff" />
           </TouchableOpacity>
@@ -116,7 +165,7 @@ const EditProfile = () => {
           />
         </View>
 
-        <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>
           <Text style={styles.label}>Phone</Text>
           <TextInput
             value={phone}
@@ -124,6 +173,17 @@ const EditProfile = () => {
             style={styles.input}
             keyboardType="phone-pad"
             placeholder='Enter phone number'
+          />
+        </View>
+
+          <View style={styles.inputContainer}>
+          <Text style={styles.label}>Student Class</Text>
+          <TextInput
+            value={studentClass}
+            onChangeText={(e)=> setStudentClass(e)}
+            style={styles.input}
+         //   keyboardType="phone-pad"
+            placeholder='Enter class name'
           />
         </View>
 
@@ -154,6 +214,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 3,
     borderColor: '#007bff',
+    resizeMode:'cover'
   },
   editIcon: {
     position: 'absolute',

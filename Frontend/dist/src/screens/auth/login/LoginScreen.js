@@ -50,11 +50,12 @@ const LoginScreen = props => {
        setLoading(true);
       try {
         const login = await dispatch(
-          loginAction({ email: username, password:password }),
+          loginAction({ phone_number: username, password:password }),
         ).unwrap();
 
         console.log('Login success:', login);
         Alert.alert('Success', login.message || 'Login successful');
+          Alert.alert('Success', login.message || 'Login successful',login);
         setVisible(true);
          props.navigation.replace('BottomTabNavigations');
       } catch (err) {

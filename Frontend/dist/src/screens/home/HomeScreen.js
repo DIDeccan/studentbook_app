@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../../redux/reducer/themeReducer';
 import { darkColors, lightColors } from '../../utils/Colors';
 import FontAwesome5 from 'react-native-vector-icons/Ionicons';
+import Fontisto from 'react-native-vector-icons/Fontisto';
 
 const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -79,7 +80,10 @@ const HomeScreen = ({ navigation }) => {
             </Text>
           </View>
           <View>
-            <TouchableOpacity
+            <TouchableOpacity style={{marginRight:SW(10)}}>
+                <Fontisto name="bell" size={25} color="black" />
+            </TouchableOpacity>
+            {/* <TouchableOpacity
               style={styles.iconButton}
               onPress={() => dispatch(toggleTheme())}
             >
@@ -88,7 +92,7 @@ const HomeScreen = ({ navigation }) => {
               ) : (
                 <FontAwesome5 name="moon-outline" size={30} color="white" />
               )}
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>

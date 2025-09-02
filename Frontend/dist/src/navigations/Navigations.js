@@ -7,7 +7,6 @@ import LandingPage from '../screens/landingPage/LandingPage';
 import SignUpScreen from '../screens/auth/signup/SignUpScreen';
 import LoginScreen from '../screens/auth/login/LoginScreen';
 import BottomTabNavigations from './BottomTabNavigation';
-import DrawerNavigation from './DrawerNavigation';
 import ContentSection from '../screens/chooseContant/ContentSection';
 import MathSubject from '../screens/subjects/MathSubject';
 import EnglishSubject from '../screens/subjects/EnglishSbject';
@@ -37,7 +36,6 @@ const Navigations = () => {
         name="BottomTabNavigations"
         component={BottomTabNavigations}
       />
-      <Stack.Screen name="DrawerNavigation" component={DrawerNavigation} />
       <Stack.Screen name="ContentSection" component={ContentSection} />
       <Stack.Screen name="MathSubject" component={MathSubject} />
       <Stack.Screen name="EnglishSubject" component={EnglishSubject} />

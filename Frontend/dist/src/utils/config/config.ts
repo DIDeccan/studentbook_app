@@ -1,11 +1,15 @@
-export const baseURL = 'http://127.0.0.1:8000/';
+export const baseURL = 'http://192.168.0.5:8001/';
 export const endpoints = {
   SIGN_UP: 'student-register',
   LOGIN: 'login',
   GET_CLASS:'class-list',
   FORGOT_PASSWORD:"user-forgot-password",
   VERIFY_OTP:"student-activation",
-  CREATE_ORDER:"custom-package/create_order/",
-  VERIFY_PAYMENT:"custom-package/verify_payment/",
-  CHANGE_PASSWORD:"change-password"
+  CREATE_ORDER:"payment-create-order",
+  VERIFY_PAYMENT:"verify-payment",
+  CHANGE_PASSWORD:"change-password",
+  STUDENT_PROFILE:"student-profile",
+  LOGOUT:"logout",
+  RESEND_OTP:"resend_otp",
+  DEMO_VIDEOS:'class-list-demo-vedio'
 };

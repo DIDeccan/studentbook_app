@@ -22,21 +22,23 @@ import { useDispatch } from 'react-redux';
 
 const ForgotPassword = ({ navigation }) => {
   const dispatch = useDispatch();
-  const [email, setEmail] = useState('');
-  const [emailerror, setEmailerror] = useState(false);
+    const [phone, setPhone] = useState('');
+      const [phoneError, setPhoneerror] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
+    const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
 
   const sendOtp = async () => {
-    setEmailerror(true);
-   // navigation.navigate('CreatePassword', { email });
-    if (checkEmailValidation(email) && email !== '') {
-      let send = await dispatch(sendOtpPassword({ user: email }));
+    setPhoneerror(true);
+    navigation.navigate('CreatePassword', { email });
+    if (phoneRegex.test(phone)) {
+      let send = await dispatch(sendOtpPassword({ user: phone }));
 
       console.log('FULL RESPONSE:', send);
-
-      if (send?.payload?.statusCode === 200) {
-        console.log('OTP sent successfully');
+ setShowOtpModal(true);
+      if (send?.payload?.status_type === 'success') {
+        console.log(send?.payload?.message || 'OTP sent successfully');
+        Alert.alert(send?.payload?.message || 'OTP sent successfully')
         setShowOtpModal(true);
       } else {
         console.log('OTP sending failed');
@@ -66,23 +68,28 @@ const ForgotPassword = ({ navigation }) => {
             Forgot Password
           </Text>
           <Text style={{ fontSize: SF(15), marginTop: SH(15) }}>
-            Do you forgot your password please! enter your email address
+            Do you forgot your password please! enter your phone number
           </Text>
+
           <Input
-            keyboardType="email-address"
-            title={translate('Email')}
-            placeholder={translate('textForEmailForPlaceholder')}
-            value={email}
-            onChangeHandler={e => setEmail(e)}
-            textInputProps={{
-              style: styles.inputStyle,
-            }}
-          />
-          {!checkEmailValidation(email) && emailerror ? (
-            <View>
-              <Text style={styles.ErrorMsg}>{translate('validEmail')}</Text>
-            </View>
-          ) : null}
+                placeholderTextColor={''}
+                title={translate('textPhone')}
+                maxLength={10}
+                placeholder="9700 022 225"
+                keyboardType="number-pad"
+                value={phone}
+                onChangeHandler={e => setPhone(e)}
+                textInputProps={{
+                  style: styles.inputStyle,
+                }}
+              />
+              {!phoneRegex.test(phone) && phoneError ? (
+                <View>
+                  <Text style={styles.ErrorMsg}>
+                    {translate('validNumber')}
+                  </Text>
+                </View>
+              ) : null}
 
           <TouchableOpacity style={styles.singupButtonMain} onPress={sendOtp}>
             <Text style={styles.singupTextStyle}>{translate('Send OTP')}</Text>
@@ -98,45 +105,62 @@ const ForgotPassword = ({ navigation }) => {
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
             <Text style={styles.title}>Verify Signup OTP</Text>
-            <OTPInput
+             <OTPInput
               length={6}
               onSubmit={async otp => {
+                console.log('✅ OTP from child:', otp);
                 try {
-                  let response = await dispatch(
+                  const result = await dispatch(
                     verifyOtp({
-                      email:'',
+                      email: email,
+                      phone_number: phone,
                       first_name:'',
-                      last_name:'',
-                      phone_number:email,
-                      address:'',
-                      zip_code:'',
-                      user_type:'',
-                      student_class:"",
-                      is_active:"",
+                      last_name: '',
+                      address: '',
+                      zip_code: '',
+                      user_type: '',
+                      student_class: '',
+                      is_active: '',
                       password:'',
-                      otp:otp,
+                      otp: otp, // use entered otp instead of hardcoded
                     }),
                   );
 
-                  //console.log(response, "=========verifyOtp====");
-                  if (response?.payload?.status === 200) {
+                  if (verifyOtp.fulfilled.match(result)) {
+                    console.log('Success:', result.payload);
+                    setOtpMessage(result.payload.message);
                     Alert.alert(
                       'Success',
-                      response?.payload?.message || 'OTP Verified',
+                      result.payload.message || 'OTP Verified',
+                      [
+                        {
+                          text: 'OK',
+                          onPress: () => setOtpSuccessPopup(true),
+                        },
+                      ],
                     );
-                  } else {
+                  } else if (verifyOtp.rejected.match(result)) {
+                    console.log('Error:', result.payload);
                     Alert.alert(
-                      'Failed',
-                      response?.payload?.message || 'Invalid OTP, try again.',
+                      'Error',
+                      result.payload?.message || 'OTP verification failed',
                     );
                   }
                 } catch (error) {
-                  console.error('Error in OTP verification:', error);
+                  console.log('Exception:', error);
                   Alert.alert(
                     'Error',
-                    'Something went wrong, please try again.',
+                    'Something went wrong. Please try again.',
                   );
                 }
+              }}
+              onResend={() => {
+                console.log('🔄 Resend clicked');
+                dispatch(
+                  reSendOtp({
+                    phone_number: phone,
+                  }),
+                );
               }}
             />
           </View>

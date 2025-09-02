@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,23 +14,53 @@ import { AboutUs, ContackUsIcon, deleteIcon, LogoutIcon, PasswordlockIcon, Priva
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { darkColors, lightColors } from '../../utils/Colors';
+import { getProfile, logoutAction } from '../../redux/reducer/profileReducer';
+import { unwrapResult } from "@reduxjs/toolkit";
 
 const ProfileSection = ({ navigation }) => {
-    const dispatch = useDispatch();
+    const dispatch = useDispatch()
+    const getProfileData = useSelector((state)=> state.profile.getProfileData)
      const themeMode = useSelector((state) => state.theme.theme);
     let colors = (themeMode === 'dark') ? darkColors : lightColors;
     const styles = themedStyles(colors);
   const [logout, setLogOut] = useState(false);
+    const [profileImage, setProfileImage] = useState(null);
+  const  profileData  = useSelector(state => state.profileData);
+
+   useEffect(()=>{
+      dispatch(getProfile())
+    //  setProfileImage(getProfileData.profile_image || '');
+    },[dispatch])
 
   const EditProfileBtn = () => {
     navigation.navigate('EditProfile');
   };
 
-  const handleConfirmLogout = () => {
+  const handleConfirmLogout1 = async() => {
     setLogOut(false);
+  await  dispatch(logoutAction({
+    refreshToken:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2NDIyMDYyMywiaWF0IjoxNzU2NDQ0NjIzLCJqdGkiOiIwYmIwNTQ4ZjVmZTU0MDQ5YjFmZDJiNzgxMjE0N2RmYiIsInVzZXJfaWQiOiIxMDcifQ.Q4D0BqPLQAxAbxHVAqqK2bvZzm8UyyFu8C9-MUfyoTg"
+  }))
     // Add your actual logout logic here
     console.log("User logged out");
   };
+  const handleConfirmLogout = async () => {
+  try {
+    const resultAction = await dispatch(
+      logoutAction({
+       refresh:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2NDIyMzk1MSwiaWF0IjoxNzU2NDQ3OTUxLCJqdGkiOiI5NGFjNDMzODJjNGM0YzhjYWI2Mzc2YmNlOGUzZmZmYiIsInVzZXJfaWQiOiIxMDciLCJ1c2VyX3R5cGUiOiJzdHVkZW50In0.23wD867Tsdr5x86ATn3BJPJ8g3gZDhiktao9RLNjHq0",
+      })
+    );
+
+    const data = unwrapResult(resultAction);
+    console.log(data.message); // 👉 "Logout successful"
+    Alert.alert("Success", data.message);
+    setLogOut(false);
+  } catch (err) {
+    console.log(err.message);
+    Alert.alert("Error", err.message || "Logout failed");
+  }
+};
 
 const settingScreenBtn = ()=>{
 navigation.navigate('SettingScreen')
@@ -52,6 +82,7 @@ navigation.navigate('SettingScreen')
           }}
           style={styles.profileImage}
         />
+      
         <Text style={[styles.name]}>Vasavi Pillala</Text>
         <Text style={styles.title}>React Native Developer | Vizianagaram</Text>
       </View>
