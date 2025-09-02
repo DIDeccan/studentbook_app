@@ -37,36 +37,6 @@ class StudentPackage(models.Model):
     def __str__(self):
         return f"{self.student.email} - {self.course.name}"
 
-# class UserManager(BaseUserManager):
-#     def create_user(self, email, password=None):
-#         """
-#         Creates and saves a User with the given email, date of
-#         birth and password.
-#         """
-#         if not email:
-#             raise ValueError("Users must have an email address")
-
-#         user = self.model(
-#             email=self.normalize_email(email),
-#         )
-
-#         user.set_password(password)
-#         user.save(using=self._db)
-#         return user
-
-#     def create_superuser(self, email, password=None):
-#         """
-#         Creates and saves a superuser with the given email, date of
-#         birth and password.
-#         """
-#         user = self.create_user(
-#             email,
-#             password=password,
-#         )
-#         user.is_superuser = True
-#         user.save(using=self._db)
-#         return user
-
 
 class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None):
@@ -166,7 +136,8 @@ class User(AbstractBaseUser):
 
 class Student(User):
     # registration_id = models.CharField(max_length=20, unique=True, editable=False)
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="students", null=True,blank=True)
+    # school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="students", null=True,blank=True)
+    school = models.CharField(max_length=255, null=True, blank=True)
     student_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="main_students")
 
 
@@ -316,3 +287,15 @@ class SubTopic(models.Model):
     def __str__(self):
         return self.subtopic_name
         
+class GeneralContent(models.Model):
+    """
+    Represents general content that can be associated with a Yoga, Sports, GK etc.
+    Stores content title, description, optional file attachment, and links to its related entities.
+    """
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    image = models.FileField(upload_to='general_content_files/', blank=True, null=True)
+
+
+    def __str__(self):
+        return self.title
