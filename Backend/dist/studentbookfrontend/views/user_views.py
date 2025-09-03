@@ -1,36 +1,24 @@
 from django.shortcuts import render
 from studentbookfrontend.serializers.user_serializers import *
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import generics
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from studentbookfrontend.notifications.message_service import *
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from studentbookbackend.settings import EMAIL_HOST_USER,EMAIL_HOST,EMAIL_HOST_PASSWORD
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework import status
-
 from django.shortcuts import get_object_or_404
-
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 from studentbookfrontend.helper.api_response import api_response
 import random
 from studentbookfrontend.models import *
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework.exceptions import ValidationError
-
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 # Create your views here.
 
 class EmailOrPhoneBackend(ModelBackend):
@@ -79,6 +67,38 @@ def validate_phone_number(phone_number: str) -> str:
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    permission_classes = [permissions.AllowAny]  # refresh usually doesn't require auth
+
+    def post(self, request, *args, **kwargs):
+        try:
+            response = super().post(request, *args, **kwargs)
+
+            # If refresh token is invalid, let it fall to exception
+            if response.status_code != status.HTTP_200_OK:
+                return api_response(
+                    message="Invalid or expired token.",
+                    message_type="error",
+                    status_code=response.status_code,
+                )
+
+            # On success
+            return api_response(
+                message="Token refreshed successfully",
+                message_type="success",
+                status_code=status.HTTP_200_OK,
+                data=response.data
+            )
+
+        except (InvalidToken, TokenError):
+            return api_response(
+                message="Invalid or blacklisted token.",
+                message_type="error",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+
 
 class ClassListAPIView(APIView):
     # permission_classes = [IsAuthenticated]
@@ -194,15 +214,16 @@ class StudentDetailAPI(APIView):
                 )
 
             # Do NOT update yet — just trigger OTP
-            send_otp_newphone_number(student, 'OTP For Phone number change', new_phone)
+            responce = send_otp_newphone_number(student, 'OTP For Phone number change', new_phone)
 
             # student.save()
 
-            return api_response(
-                                message="For Change Phone Number on School Book an OTP sent to your New Phone Number.",
-                                message_type="success",
-                                status_code=status.HTTP_200_OK
-                            )
+            # return api_response(
+            #                     message="For Change Phone Number on School Book an OTP sent to your New Phone Number.",
+            #                     message_type="success",
+            #                     status_code=status.HTTP_200_OK
+            #                 )
+            return responce
 
         
         serializer = StudentSerializer(student)
@@ -301,13 +322,37 @@ class ForgotPasswordAPIView(APIView):
             user = User.objects.filter(phone_number=user_name).first()
 
         otp = json_data.get("otp")
-        print(otp)
         new_password = json_data.get("new_password")
         confirm_new_password = json_data.get("confirm_new_password")
 
-        if otp and new_password and confirm_new_password:
-            if not all([user_name, otp, new_password, confirm_new_password]):
-                # return Response({"message": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Step 1: Verify OTP
+        if otp and not new_password and not confirm_new_password:
+            if not all([user, otp]):
+                return api_response(
+                message="User and Otp are required.",
+                message_type="error",
+                status_code=status.HTTP_400_BAD_REQUEST
+                        )
+
+
+            if user.otp == otp:
+                user.otp_verified = True
+                return api_response(
+                message=" Otp verified successfully.",
+                message_type="success",
+                status_code=status.HTTP_200_OK
+                        )
+
+            else:
+                return api_response(
+                message="Invalid email or OTP not verified.",
+                message_type="error",
+                status_code=status.HTTP_400_BAD_REQUEST
+                        )
+
+
+        if  new_password and confirm_new_password:
+            if not all([ new_password, confirm_new_password]):
                 return api_response(
                 message="All fields are required.",
                 message_type="error",
@@ -321,31 +366,14 @@ class ForgotPasswordAPIView(APIView):
                 message_type="error",
                 status_code=status.HTTP_400_BAD_REQUEST
                         )
-
-            # user = User.objects.filter(email=user_name, otp=otp).first()
-            if user.otp == otp:
+            if user and user.otp_verified:
                 user.set_password(new_password)
-                user.otp = None
-                user.otp_verified = True 
+                user.otp_verified = True
+                user.otp = None  # Clear OTP after successful password reset
                 user.save()
-                # return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
-                return api_response(
-                message="Password reset successfully.",
-                message_type="success",
-                status_code=status.HTTP_200_OK
-                        )
-
-            else:
-                # return Response({"message": "Invalid email or OTP not verified."}, status=status.HTTP_400_BAD_REQUEST)
-                return api_response(
-                message="Invalid email or OTP not verified.",
-                message_type="error",
-                status_code=status.HTTP_400_BAD_REQUEST
-                        )
 
 
         else:
-            # return Response({"message": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST)
             return api_response(
                 message="Invalid request.",
                 message_type="error",
@@ -390,12 +418,13 @@ class StudentRegisterAPIView(APIView):
         if user:
             if not user.is_active and not user.otp_verified:
                 # send_otp_email(user,'Registration OTP')
-                send_otp_phone_number(user,'Registration OTP')
-                return api_response(
-                    message="User already registered but not verified. We sent a new OTP.",
-                    message_type="warning",
-                    status_code=status.HTTP_200_OK
-                )
+                response = send_otp_phone_number(user,'Registration OTP')
+                # return api_response(
+                #     message="User already registered but not verified. We sent a new OTP.",
+                #     message_type="warning",
+                #     status_code=status.HTTP_200_OK
+                # )
+                return response
             elif not StudentPackage.objects.filter(student = user):
                 return api_response(
                     message="User already registered but Not taken any Course.",
@@ -509,7 +538,8 @@ class StudentActivationAPIView(APIView):
                             status_code=status.HTTP_200_OK,
                             data={
                                     "refresh": str(refresh),
-                                    "access": access_token
+                                    "access": access_token,
+                                    "is_paid": StudentPackage.objects.filter(student=user).exists()
                                 }
                         )
             
@@ -592,12 +622,13 @@ class ResendOtpAPIView(APIView):
                         )
         
         # send_otp_email(user,'Registration OTP')
-        send_otp_phone_number(user,'Registration OTP')
-        return api_response(
-                        message="OTP sent to your Phone Number.",
-                        message_type="success",
-                        status_code=status.HTTP_200_OK
-                    )
+        responce = send_otp_phone_number(user,'Registration OTP')
+        # return api_response(
+        #                 message="OTP sent to your Phone Number.",
+        #                 message_type="success",
+        #                 status_code=status.HTTP_200_OK
+        #             )
+        return responce
     
 class OtpVerificationAPIView(APIView):
     permissions_classes = [IsAuthenticated]

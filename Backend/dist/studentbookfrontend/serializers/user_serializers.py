@@ -6,18 +6,28 @@ from rest_framework.exceptions import AuthenticationFailed,APIException
 from django.contrib.auth import authenticate
 import re
 from django.utils import timezone
-# from rest_framework import status
+from rest_framework import status
 
 
 class CustomAPIException(APIException):
     status_code = 400
 
-    def __init__(self, message, message_type="error", data=None):
-        self.detail = {
-            "message": message,
-            "message_type": message_type,
-            "data": data
-        }
+    def __init__(self, message, message_type="error",status_code=None, data=None):
+        if data is None:
+            data = {}
+            self.detail = {
+                "message": message,
+                "message_type": message_type,
+                "status_code":status_code
+
+            }
+        else:
+            self.detail = {
+                "message": message,
+                "message_type": message_type,
+                "data": data,
+                "status_code":status_code
+            }
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -55,9 +65,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             raise CustomAPIException(
                 message= "Invalid credentials.",
                 message_type= "error",
-                data= None
+                status_code = status.HTTP_401_UNAUTHORIZED,
             )
         if user.user_type == 'student':
+
+            if not StudentPackage.objects.filter(student=user).exists():
+                raise CustomAPIException(
+                    message= "Please subscribe to a package to login.",
+                    message_type= "error",
+                    status_code = status.HTTP_403_FORBIDDEN,
+                )
+
             now = timezone.now()
             active_tokens = OutstandingToken.objects.filter(user=user,expires_at__gt=now
                                                             ).exclude(
@@ -69,7 +87,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 raise CustomAPIException(
                     message= "User already logged in on another device",
                     message_type= "error",
-                    data= None
+                    status_code = status.HTTP_403_FORBIDDEN,
                 )
   
 
@@ -78,6 +96,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user_type'] = self.user.user_type
         data['is_active'] = self.user.is_active
         data['message_type'] = "success"
+        if user.user_type == 'student':
+            data['student_id'] = user.student.id if hasattr(user, 'student') else None
+            data['is_paid'] = StudentPackage.objects.filter(student=user).exists()
 
         return data
 

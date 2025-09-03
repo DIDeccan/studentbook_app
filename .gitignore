@@ -21,9 +21,9 @@ staticfiles/
 .DS_Store
 Thumbs.db
 .env
-requirements.txt
+# requirements.txt
 
-
+/media/
 #react-native#
 
 # OSX
