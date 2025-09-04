@@ -18,8 +18,14 @@ class RazorpayOrderAPIView(APIView):
 
     def post(self, request):
         user = request.user
-        # student_class_id = request.data.get("student_class")
+        student_class_id = request.data.get("student_class")
         amount = request.data.get("price")
+        if not student_class_id:
+                return api_response(
+                    message="Class Id Not Given",
+                    message_type="error",
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
 
   
 
@@ -36,7 +42,7 @@ class RazorpayOrderAPIView(APIView):
 
             subscriptionorder = SubscriptionOrder(
                 student = user,
-                course = user.student_class,
+                course = student_class_id,
                 price = amount
             )
 
@@ -46,7 +52,7 @@ class RazorpayOrderAPIView(APIView):
  
             return api_response(
                 message="Order created",
-                message_type="created",
+                message_type="success",
                 status_code=status.HTTP_201_CREATED,
                 data = order_response
             )
@@ -93,6 +99,8 @@ class TransactionAPIView(APIView):
 
             student = request.user
 
+            payment = rz_client.payment.fetch(data.get("razorpay_payment_id"))
+            payment_method = payment.get("method")
       
 
 
