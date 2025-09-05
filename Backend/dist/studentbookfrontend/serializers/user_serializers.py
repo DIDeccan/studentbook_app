@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate
 import re
 from django.utils import timezone
 from rest_framework import status
-
+from django.contrib.auth.models import update_last_login
 
 class CustomAPIException(APIException):
     status_code = 400
@@ -58,6 +58,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # data = super().validate(attrs)
         username = attrs.get("phone_number")
         password = attrs.get("password")
+        user = Student.objects.filter(phone_number=username).first()
+        if user is None:
+            # raise AuthenticationFailed("Invalid credentials.")
+            raise CustomAPIException(
+                message= "User Not Found.",
+                message_type= "error",
+                data= None
+            )
+        
         user = authenticate(request=self.context.get('request'), email=username, password=password)
         
         if user is None:
@@ -93,6 +102,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # Add custom claims
         data = super().validate(attrs)
+        update_last_login(None, self.user)
         data['user_type'] = self.user.user_type
         data['is_active'] = self.user.is_active
         data['message_type'] = "success"

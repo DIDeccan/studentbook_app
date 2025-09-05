@@ -104,7 +104,7 @@ class ClassListAPIView(APIView):
     # permission_classes = [IsAuthenticated]
     queryset = Class.objects.all()
     def get(self, request, format=None):
-        classes = Class.objects.all()
+        classes = Class.objects.all().order_by('id')
         serializer = ClassSerializer(classes, many=True)    
         return api_response(
             message="Class List Data.",
@@ -351,7 +351,7 @@ class ForgotPasswordAPIView(APIView):
                         )
 
 
-        if  new_password and confirm_new_password:
+        if not otp and new_password and confirm_new_password:
             if not all([ new_password, confirm_new_password]):
                 return api_response(
                 message="All fields are required.",
@@ -371,6 +371,11 @@ class ForgotPasswordAPIView(APIView):
                 user.otp_verified = True
                 user.otp = None  # Clear OTP after successful password reset
                 user.save()
+                return api_response(
+                    message="Password reset successfully.",
+                    message_type="success",
+                    status_code=status.HTTP_200_OK
+                )
 
 
         else:
@@ -577,7 +582,7 @@ class ChangePasswordAPIView(APIView):
 class ClassListDemoVideosApi(APIView):
 
     def get(self, request, *args, **kwargs):
-        class_list = Class.objects.all()
+        class_list = Class.objects.all().order_by('id')
         data = []
 
         for class_data in class_list:
