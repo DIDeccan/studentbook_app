@@ -6,7 +6,6 @@ import { SF, SH } from '../utils/dimensions';
 import HomeScreen from '../screens/home/HomeScreen';
 import MyLearnings from '../screens/mylearnings/MyLearnings';
 import HelpSection from '../screens/help/HelpSection';
-import Downloads from '../screens/downloads/Downloads';
 import ProfileSection from '../screens/profileSection/ProfileSection';
 
 const Tab = createBottomTabNavigator();

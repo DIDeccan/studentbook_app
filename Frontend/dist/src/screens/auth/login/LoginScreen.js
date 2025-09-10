@@ -24,39 +24,51 @@ import ContainerComponent from '../../../components/commonComponents/Container';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginAction } from '../../../redux/reducer/authReducer';
 import { darkColors, lightColors } from '../../../utils/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = props => {
     const themeMode = useSelector((state) => state.theme.theme);
     let colors = (themeMode === 'dark') ? darkColors : lightColors;
     const styles = themedStyles(colors);
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [passVisible, setPassVisible] = useState(false);
   const [visible, setVisible] = useState(false);
   const dispatch = useDispatch();
-  const { user,error } = useSelector(state => state.auth);
-  const [emailerror, setEmailerror] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [deviceToken, setDeviceToken] = useState('');
-  const [loading, setLoading] = useState(false);
+ const [loading, setLoading] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [phoneError, setPhoneerror] = useState(false);
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+
+
 
   const handleLogin = async () => {
-    props.navigation.replace('BottomTabNavigations');
-    setEmailerror(true);
+    //props.navigation.replace('BottomTabNavigations');
+    setPhoneerror(true)
     setPasswordError(true);
-    if (password !== '') {
+    if (phoneRegex.test(phone) &&  passwordRegex.test(password)) {
        setLoading(true);
       try {
         const login = await dispatch(
-          loginAction({ email: username, password:password }),
+          loginAction({ phone_number: phone, password:password }),
         ).unwrap();
-
+         
         console.log('Login success:', login);
-        Alert.alert('Success', login.message || 'Login successful');
-        setVisible(true);
-         props.navigation.replace('BottomTabNavigations');
+     await AsyncStorage.setItem("access_token", login.access);
+await AsyncStorage.setItem("refresh_token", login.refresh);
+//await AsyncStorage.setItem("refresh_token", login.refresh);
+
+const acc = await AsyncStorage.getItem("access_token");
+const ref = await AsyncStorage.getItem("refresh_token");
+console.log("accc===", acc);
+console.log("ref===", ref);
+
+   Alert.alert("Success", login.message || "Login successful", [
+  { text: "OK", onPress: () =>  props.navigation.replace('BottomTabNavigations')}
+]);
       } catch (err) {
         console.error('Login failed:', err);
         Alert.alert(
@@ -76,6 +88,7 @@ const LoginScreen = props => {
   };
   const goToForgetPassword = () => {
     props.navigation.navigate('ForgotPassword');
+     //props.navigation.navigate('BottomTabNavigations');
   };
 
   return (
@@ -94,7 +107,7 @@ const LoginScreen = props => {
             <Text style={styles.subTitleTxt}>
               {translate('textPleaseEnterDetails')}
             </Text>
-            <Input
+            {/* <Input
               keyboardType="email-address"
               title={translate('textEmail')}
               placeholder={translate('textForEmailForPlaceholder')}
@@ -108,7 +121,26 @@ const LoginScreen = props => {
               <View style={{}}>
                 <Text style={styles.ErrorMsg}>{translate('validEmail')}</Text>
               </View>
-            ) : null}
+            ) : null} */}
+            <Input
+                placeholderTextColor={''}
+                title={translate('textPhone')}
+                maxLength={10}
+                placeholder="9700 022 225"
+                keyboardType="number-pad"
+                value={phone}
+                onChangeHandler={e => setPhone(e)}
+                textInputProps={{
+                  style: styles.inputStyle,
+                }}
+              />
+              {!phoneRegex.test(phone) && phoneError ? (
+                <View>
+                  <Text style={styles.ErrorMsg}>
+                    {translate('validNumber')}
+                  </Text>
+                </View>
+              ) : null}
             <Input
               placeholderTextColor={'blue' + '70'}
               keyboardType="default"
@@ -147,8 +179,14 @@ const LoginScreen = props => {
             <TouchableOpacity
               style={styles.loginButtonStyle}
               onPress={handleLogin}
-            >
-              <Text style={styles.loginTextStyle}>{translate('login')}</Text>
+                 disabled={loading}>
+                   <Text style={styles.loginTextStyle}>{translate('login')}</Text>
+                            {/* {loading ? (
+                              <ActivityIndicator color="#fff" /> 
+                            ) : (
+                              <Text style={styles.loginTextStyle}>{translate('login')}</Text>
+                            )} */}
+              
             </TouchableOpacity>
             <View style={styles.signUpTxtWrapper}>
               <Text style={styles.dontHAc}>
@@ -267,11 +305,16 @@ const themedStyles =(colors)=> StyleSheet.create({
     justifyContent: 'center',
     width: SW(300),
   },
-  loader: {
-    position: 'absolute',
-    marginTop: SH(40),
-    alignSelf: 'center',
-    zIndex: 20,
-  },
+  loaderOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0,0,0,0.3)", // dim background
+  zIndex: 999,
+},
 });
 export default LoginScreen;

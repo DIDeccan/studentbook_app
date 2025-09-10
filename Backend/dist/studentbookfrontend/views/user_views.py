@@ -419,12 +419,12 @@ class StudentRegisterAPIView(APIView):
             if not user.is_active and not user.otp_verified:
                 # send_otp_email(user,'Registration OTP')
                 response = send_otp_phone_number(user,'Registration OTP')
-                # return api_response(
-                #     message="User already registered but not verified. We sent a new OTP.",
-                #     message_type="warning",
-                #     status_code=status.HTTP_200_OK
-                # )
-                return response
+                return api_response(
+                    message="User already registered but not verified. We sent a new OTP.",
+                    message_type="warning",
+                    status_code=status.HTTP_200_OK
+                )
+                # return response
             elif not StudentPackage.objects.filter(student = user):
                 return api_response(
                     message="User already registered but Not taken any Course.",

@@ -7,7 +7,6 @@ import LandingPage from '../screens/landingPage/LandingPage';
 import SignUpScreen from '../screens/auth/signup/SignUpScreen';
 import LoginScreen from '../screens/auth/login/LoginScreen';
 import BottomTabNavigations from './BottomTabNavigation';
-import DrawerNavigation from './DrawerNavigation';
 import ContentSection from '../screens/chooseContant/ContentSection';
 import MathSubject from '../screens/subjects/MathSubject';
 import EnglishSubject from '../screens/subjects/EnglishSbject';
@@ -21,6 +20,7 @@ import PaymentScreen from '../screens/auth/payment/PaymentScreen';
 import SettingScreen from '../screens/profileSection/SettingScreen';
 import ForgotPassword from '../screens/auth/forgotPassword/ForgotPassword';
 import CreatePassword from '../screens/auth/forgotPassword/CreatePassword';
+import ChangePasswordScreen from '../screens/profileSection/ChangePassword';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,7 +37,6 @@ const Navigations = () => {
         name="BottomTabNavigations"
         component={BottomTabNavigations}
       />
-      <Stack.Screen name="DrawerNavigation" component={DrawerNavigation} />
       <Stack.Screen name="ContentSection" component={ContentSection} />
       <Stack.Screen name="MathSubject" component={MathSubject} />
       <Stack.Screen name="EnglishSubject" component={EnglishSubject} />
@@ -54,6 +53,7 @@ const Navigations = () => {
       <Stack.Screen name="SettingScreen" component={SettingScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
        <Stack.Screen name="CreatePassword" component={CreatePassword} />
+         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
     </Stack.Navigator>
   );
 };

@@ -17,31 +17,43 @@ import { translate } from '../../../utils/config/i18n';
 import { SH, SW, SF } from '../../../utils/dimensions';
 import OTPInput from '../../../components/commonComponents/OTPInput';
 import Fonts from '../../../utils/Fonts';
-import { sendOtpPassword, verifyOtp } from '../../../redux/reducer/authReducer';
-import { useDispatch } from 'react-redux';
+import { reSendOtp, resetPassword, sendOtpPassword, verifyOtp1} from '../../../redux/reducer/authReducer';
+import { useDispatch, useSelector } from 'react-redux';
+import Entypo from 'react-native-vector-icons/Entypo';
+import axios from "axios";
 
 const ForgotPassword = ({ navigation }) => {
   const dispatch = useDispatch();
-  const [email, setEmail] = useState('');
-  const [emailerror, setEmailerror] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneerror] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const { loading } = useSelector((state) => state.auth)
+  const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
 
   const sendOtp = async () => {
-    setEmailerror(true);
-   // navigation.navigate('CreatePassword', { email });
-    if (checkEmailValidation(email) && email !== '') {
-      let send = await dispatch(sendOtpPassword({ user: email }));
+    setPhoneerror(true);
+    if (phoneRegex.test(phone)) {
+      let send = await dispatch(sendOtpPassword({ user: phone }));
+if (sendOtpPassword.fulfilled.match(send)) {
+  console.log(" OTP sent:", send.payload);
+  Alert.alert(send.payload.message || "OTP sent successfully");
+  setShowOtpModal(true);
+} else {
+  console.log("OTP failed:", send.payload);
+  Alert.alert("Error", send.payload?.message || "Something went wrong");
+}
 
-      console.log('FULL RESPONSE:', send);
-
-      if (send?.payload?.statusCode === 200) {
-        console.log('OTP sent successfully');
-        setShowOtpModal(true);
-      } else {
-        console.log('OTP sending failed');
-        Alert.alert('Error', send?.payload?.message || 'Something went wrong');
-      }
+      // console.log('FULL RESPONSE:', send);
+      // setShowOtpModal(true);
+      // if (send?.payload?.status_type === 'success') {
+      //   console.log(send?.payload?.message || 'OTP sent successfully');
+      //   Alert.alert(send?.payload?.message || 'OTP sent successfully')
+      //   setShowOtpModal(true);
+      // } else {
+      //   console.log('OTP sending failed');
+      //   Alert.alert('Error', send?.payload?.message || 'Something went wrong');
+      // }
     }
   };
 
@@ -66,21 +78,26 @@ const ForgotPassword = ({ navigation }) => {
             Forgot Password
           </Text>
           <Text style={{ fontSize: SF(15), marginTop: SH(15) }}>
-            Do you forgot your password please! enter your email address
+            Do you forgot your password please! enter your phone number
           </Text>
+
           <Input
-            keyboardType="email-address"
-            title={translate('Email')}
-            placeholder={translate('textForEmailForPlaceholder')}
-            value={email}
-            onChangeHandler={e => setEmail(e)}
+            placeholderTextColor={''}
+            title={translate('textPhone')}
+            maxLength={10}
+            placeholder="9700 022 225"
+            keyboardType="number-pad"
+            value={phone}
+            onChangeHandler={e => setPhone(e)}
             textInputProps={{
               style: styles.inputStyle,
             }}
           />
-          {!checkEmailValidation(email) && emailerror ? (
+          {!phoneRegex.test(phone) && phoneError ? (
             <View>
-              <Text style={styles.ErrorMsg}>{translate('validEmail')}</Text>
+              <Text style={styles.ErrorMsg}>
+                {translate('validNumber')}
+              </Text>
             </View>
           ) : null}
 
@@ -97,46 +114,59 @@ const ForgotPassword = ({ navigation }) => {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
-            <Text style={styles.title}>Verify Signup OTP</Text>
+            <View
+              style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+            >
+              <Text style={styles.title}>Verify Signup OTP</Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+                <Entypo size={SF(30)} color={''} name={'cross'} />
+              </TouchableOpacity>
+            </View>
             <OTPInput
               length={6}
-              onSubmit={async otp => {
-                try {
-                  let response = await dispatch(
-                    verifyOtp({
-                      email:'',
-                      first_name:'',
-                      last_name:'',
-                      phone_number:email,
-                      address:'',
-                      zip_code:'',
-                      user_type:'',
-                      student_class:"",
-                      is_active:"",
-                      password:'',
-                      otp:otp,
-                    }),
-                  );
+        onSubmit={async(otp)=>{
+             console.log(phone,"phone", otp,"opt")
+             console.log("Hiii5")
+      try {
+ 
+    const result = await dispatch(
+      verifyOtp1({ user: phone, otp })
+    );
+  console.log("Hiii22")
 
-                  //console.log(response, "=========verifyOtp====");
-                  if (response?.payload?.status === 200) {
-                    Alert.alert(
-                      'Success',
-                      response?.payload?.message || 'OTP Verified',
-                    );
-                  } else {
-                    Alert.alert(
-                      'Failed',
-                      response?.payload?.message || 'Invalid OTP, try again.',
-                    );
-                  }
-                } catch (error) {
-                  console.error('Error in OTP verification:', error);
-                  Alert.alert(
-                    'Error',
-                    'Something went wrong, please try again.',
-                  );
-                }
+    if (verifyOtp1.fulfilled.match(result)) {
+      console.log("Success:", result.payload);
+      Alert.alert(
+        "Success",
+        result.payload.message || "OTP Verified",
+        [
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.navigate("CreatePassword", { phone }),
+          },
+        ]
+      );
+    } else {
+      console.log("Error:", result.payload);
+      Alert.alert(
+        "Error",
+        result.payload?.message || "OTP verification failed"
+      );
+    }
+  } finally {
+
+  }
+}}
+
+
+              onResend={() => {
+                console.log('🔄 Resend clicked');
+                dispatch(
+                  reSendOtp({
+                    phone_number: phone,
+                  }),
+                );
               }}
             />
           </View>

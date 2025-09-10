@@ -21,16 +21,21 @@ import Fonts from '../../../utils/Fonts';
 import Input from '../../../components/commonComponents/Input';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Entypo from 'react-native-vector-icons/Entypo';
 import { Dropdown } from 'react-native-element-dropdown';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  CreateOrder,
   getClassNames,
+  paymentVerify,
+  reSendOtp,
   signUpAction,
   verifyOtp,
 } from '../../../redux/reducer/authReducer';
 import OTPInput from '../../../components/commonComponents/OTPInput';
 import Colors, { darkColors, lightColors } from '../../../utils/Colors';
 import RazorpayCheckout from 'react-native-razorpay';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SignUpScreen = ({ navigation }) => {
   const themeMode = useSelector(state => state.theme.theme);
@@ -38,11 +43,11 @@ const SignUpScreen = ({ navigation }) => {
   const styles = themedStyles(colors);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneerror] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passVisible, setPassVisible] = useState(false);
   const [nameError, setnameError] = useState(false);
-  const [phoneError, setPhoneerror] = useState(false);
   const [emailerror, setEmailerror] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [sectionError, setSectionError] = useState(false);
@@ -51,39 +56,54 @@ const SignUpScreen = ({ navigation }) => {
   const [conPasswordError, setconfirmPasswordError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState('');
+  const [price, setPrice] = useState('');
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpSuccessPopup, setOtpSuccessPopup] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
   const dispatch = useDispatch();
-  const { getClassData } = useSelector(state => state.auth);
-  const [dropdownData, setDropdownData] = React.useState([]);
+  const getClassData = useSelector(state => state.auth.getClassData);
+  const orderId = useSelector(state => state.auth.orderId);
+  const [btnLoading, setBtnLoading] = useState(false);
+  console.log(orderId, "================orderId==")
+  const [razorpay_order_id, setrazorpay_order_id] = useState(orderId)
+  const [deviceToken, setDeviceToken] = useState('');
   const nameRegex = /^[a-zA-Z]+( [a-zA-z]+)*$/;
   const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#?!@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-  const countryCodeData = [
-    { id: 1, name: '6th Class' },
-    { id: 2, name: '7th Class' },
-    { id: 3, name: '8th Class' },
-    { id: 4, name: '9th Class' },
-    { id: 5, name: '10th Class' },
-  ];
   useEffect(() => {
     dispatch(getClassNames());
+    //getFCMToken()
+  }, [dispatch]);
+  const tok = async () => {
+    let refresh = await AsyncStorage.getItem('refresh_token')
+    let access = await AsyncStorage.getItem('access_token')
+    let isPaid = await AsyncStorage.getItem('isPaid')
+    console.log(access, "=====acess===")
+    console.log(isPaid, "=====isPaid=====")
+    if (isPaid == 'false') {
+      setOtpSuccessPopup(true)
+    }
+  }
+  useEffect(() => {
+    tok()
   }, []);
-
   const goToLogin = () => {
     navigation.navigate('LoginScreen');
   };
 
   const signUpButton = async () => {
-    dispatch(getClassNames());
+    // onPayment()
     setnameError(true);
     setPhoneerror(true);
-    setEmailerror(true);
     setPasswordError(true);
     setSectionError(true);
     setconfirmPasswordError(true);
-
+    if (email !== '') {
+      setEmailerror(true);
+    }
+    console.log(password, confirmPassword)
     if (
       nameRegex.test(fullName) &&
       passwordRegex.test(password) &&
@@ -104,14 +124,20 @@ const SignUpScreen = ({ navigation }) => {
             student_class: value,
             is_active: false,
             password: password,
+            confirm_password: confirmPassword
           }),
         ).unwrap();
 
-        console.log('Signup Success:', result);
-        Alert.alert('Success', result.message);
-        setShowOtpModal(true);
+        //   console.log('Signup Success:', result);
+        Alert.alert('Success', result?.message || 'OTP Verified', [
+          {
+            text: 'OK',
+            onPress: () => setShowOtpModal(true),
+          },
+        ]);
+        //  Alert.alert('Success', result.message);
       } catch (err) {
-        console.error('Signup Error:', err);
+        // console.error('Signup Error:', err);
         Alert.alert(
           'Failed',
           typeof err === 'string'
@@ -138,49 +164,118 @@ const SignUpScreen = ({ navigation }) => {
       </View>
     );
   };
+  console.log('value', value, 'amount', price);
 
-  const onPayment = async () => {
+  const handleContinue = async () => {
     try {
-      // Ideally: call your backend to create an order
-      // const response = await fetch("http://YOUR_SERVER_IP:5000/create-order", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ amount: 25900, currency: "INR" })
-      // });
-      // const order = await response.json();
+      setBtnLoading(true); // show loader inside button
+
+      const result = await dispatch(
+        CreateOrder({
+          student_class: value ||3,
+          price: price || 3000,//parseInt(item.amount, 10)
+        })
+      );
+
+      if (CreateOrder.fulfilled.match(result)) {
+        const newOrderId = result.payload?.data?.id;
+        setrazorpay_order_id(newOrderId);
+        await onPayment(newOrderId); // pass fresh orderId
+      } else {
+        Alert.alert('Failed', 'Could not create order, please try again');
+      }
+    } catch (err) {
+      Alert.alert('Error', err?.message || 'Something went wrong');
+    } finally {
+      setBtnLoading(false); // hide loader
+    }
+  };
+
+  const onPayment = async (orderIdParam) => {
+    const finalOrderId = orderIdParam || razorpay_order_id;
+    console.log(finalOrderId, "finalOrderId=====", razorpay_order_id, "razorpay_order_id", orderIdParam, "orderIdParam ")
+    try {
+      setLoading(true); 
 
       let options = {
         description: 'Credits towards consultation',
-        image: '',
         currency: 'INR',
-        key: 'rzp_test_nfY709knHa5l4u', // test key
-        amount: 25900, // ✅ Amount in paise (25900 = ₹259)
+        key: 'rzp_test_nfY709knHa5l4u',
+        amount: price,
         name: fullName || 'User',
-        // order_id: order.id, // ✅ Use this when you have backend order
+        order_id: finalOrderId,
         prefill: {
-          email: email,
+          email,
           contact: phone,
           name: fullName,
         },
-        theme: { color: '#53a20e' },
+        theme: { color: colors.primary },
       };
 
       RazorpayCheckout.open(options)
-        .then(data => {
-          Alert.alert(
-            'Payment Success',
-            `Payment ID: ${data.razorpay_payment_id}`,
-          );
-          // here you can call backend API to confirm payment
+        .then(async data => {
+          try {
+            // success popup from Razorpay
+            // Alert.alert(
+            //   'Payment Success',
+            //   `Payment ID: ${data.razorpay_payment_id}\nSignature: ${data.razorpay_signature}`,
+            // );
+
+            // verify payment in backend
+            const result = await dispatch(
+              paymentVerify({
+                razorpay_payment_id: data.razorpay_payment_id,
+                razorpay_order_id: finalOrderId,
+                razorpay_signature: data.razorpay_signature,
+              })
+            ).unwrap();
+  setOtpSuccessPopup(false)
+            console.log("Payment Verify :", result);
+              console.log("Payment Verify Payload:", result.payload);
+         
+            Alert.alert(
+              "Payment Verification",
+              result?.message || "Payment verified successfully", [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setOtpSuccessPopup(false)
+                  navigation.navigate('BottomTabNavigations');
+                },
+              },
+            ],
+            );
+            if (result?.message_type === "success") {
+              await AsyncStorage.setItem("isPaid", JSON.stringify(true))
+              // navigation.navigate('BottomTabNavigations');
+            }
+          } catch (verifyErr) {
+            console.error("Verify Failed:", verifyErr);
+            Alert.alert("Payment Failed", verifyErr?.message || "Verification failed", [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setOtpSuccessPopup(true)
+                },
+              },
+            ],);
+          } finally {
+            setLoading(false);
+          }
         })
         .catch(error => {
+          setLoading(false);
           Alert.alert('Payment Failed', `${error.code} | ${error.description}`);
+          console.error("Razorpay error:", error);
         });
     } catch (err) {
+      setLoading(false);
       console.error('Payment error:', err);
       Alert.alert('Error', 'Something went wrong during payment');
     }
   };
+
+
 
   return (
     <ContainerComponent>
@@ -259,7 +354,7 @@ const SignUpScreen = ({ navigation }) => {
                 selectedTextStyle={styles.selectedTextStyle}
                 inputSearchStyle={styles.inputSearchStyle}
                 iconStyle={styles.iconStyle}
-                data={countryCodeData}
+                data={getClassData}
                 search
                 maxHeight={300}
                 labelField="name"
@@ -270,9 +365,11 @@ const SignUpScreen = ({ navigation }) => {
                 onFocus={() => {
                   console.log('Dropdown opened');
                   // 🔹 Load or render your data here
+                  dispatch(getClassNames());
                 }}
                 onChange={item => {
                   setValue(item.id);
+                  setPrice(parseInt(item.amount, 10));
                 }}
                 renderItem={renderItem}
               />
@@ -379,50 +476,109 @@ const SignUpScreen = ({ navigation }) => {
       >
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
-            <Text style={styles.title}>Verify Signup OTP</Text>
+            <View
+              style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+            >
+              <Text style={styles.title}>Verify Signup OTP</Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+                <Entypo size={SF(30)} color={''} name={'cross'} />
+              </TouchableOpacity>
+            </View>
+
             <OTPInput
               length={6}
               onSubmit={async otp => {
+                //console.log('✅ OTP from child:', otp);
                 try {
-                  setLoading(true);
+                  setLoading(true)
                   const result = await dispatch(
                     verifyOtp({
                       email: email,
-                      first_name: '',
-                      last_name: '',
                       phone_number: phone,
+                      first_name: fullName,
+                      last_name: '',
                       address: '',
                       zip_code: '',
                       user_type: 'student',
-                      student_class: '',
+                      student_class: 2,
                       is_active: false,
                       password: password,
-                      otp: otp,
+                      otp: otp, // use entered otp instead of hardcoded
                     }),
-                  ).unwrap();
-
-                  console.log('OTP Verify Success:', result);
-                  Alert.alert('Success', result.message || 'OTP Verified', [
-                    {
-                      text: 'OK',
-                      onPress: () => {
-                        onPayment();
-                      },
-                    },
-                  ]);
-                } catch (err) {
-                  console.error('OTP Verify Error:', err);
-                  Alert.alert(
-                    'Failed',
-                    typeof err === 'string'
-                      ? err
-                      : err?.message || 'Something went wrong',
                   );
-                } finally {
-                  setLoading(false);
+
+                  if (verifyOtp.fulfilled.match(result)) {
+                  console.log('Success:', result.payload);
+                    await AsyncStorage.setItem("refresh_token", result.payload.data.refresh)
+                    await AsyncStorage.setItem("access_token", result.payload.data.access)
+                    await AsyncStorage.setItem("isPaid", JSON.stringify(result.payload.data.is_paid))
+                    setOtpMessage(result.payload.message);
+                    setShowOtpModal(false)
+                    Alert.alert(
+                      'Success',
+                      result.payload.message || 'OTP Verified',
+                      [
+                        {
+                          text: 'OK',
+                          onPress: () => {
+                            setOtpSuccessPopup(true)
+                            setShowOtpModal(false)
+                          },
+                        },
+                      ],
+                    );
+                  } else if (verifyOtp.rejected.match(result)) {
+                    //  console.log('Error:', result.payload);
+                    Alert.alert(
+                      'Error',
+                      result.payload?.message || 'OTP verification failed',
+                    );
+                  }
+                } catch (error) {
+                  // console.log('Exception:', error);
+                  Alert.alert(
+                    'Error',
+                    'Something went wrong. Please try again.',
+                  );
+                }finally{
+                  setLoading(false)
                 }
               }}
+              onResend={() => {
+                console.log('🔄 Resend clicked');
+                dispatch(
+                  reSendOtp({
+                    phone_number: phone,
+                  }),
+                );
+              }}
             />
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={otpSuccessPopup}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOtpSuccessPopup(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.successModalContent}>
+            <Text style={styles.successTitle}>Success</Text>
+            <Text style={styles.successMessage}>{otpMessage}</Text>
+            <Text style={styles.successMessage}>
+              Click continue to complete payment
+            </Text>
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleContinue}
+              disabled={btnLoading}>
+              {btnLoading ? (
+                <ActivityIndicator color="#fff" /> 
+              ) : (
+                <Text style={styles.continueText}>Continue</Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -473,7 +629,6 @@ const themedStyles = colors =>
       alignItems: 'center',
     },
     roleTextStyle: {
-      color: 'black',
       marginTop: SH(1),
       fontFamily: Fonts.Regular,
       color: colors.text,
@@ -515,7 +670,6 @@ const themedStyles = colors =>
       borderRadius: SH(10),
     },
     singupTextStyle: {
-      color: 'white',
       fontFamily: Fonts.Bold,
       fontSize: SF(15),
       paddingVertical: SH(10),
@@ -563,7 +717,6 @@ const themedStyles = colors =>
       borderRadius: 12,
       padding: 12,
       borderWidth: 1,
-      borderRadius: 10,
     },
     icon: {
       marginRight: 5,
@@ -613,5 +766,37 @@ const themedStyles = colors =>
       backgroundColor: 'white',
       padding: 20,
       borderRadius: 12,
+    },
+    successModalContent: {
+      width: '85%',
+      backgroundColor: 'white',
+      padding: 25,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    successTitle: {
+      fontSize: 20,
+      fontFamily: Fonts.Bold,
+      color: 'green',
+      marginBottom: 2,
+    },
+    successMessage: {
+      fontSize: 16,
+      fontFamily: Fonts.Medium,
+      color: '#333',
+      textAlign: 'center',
+      marginVertical: 1,
+    },
+    continueButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 25,
+      borderRadius: 8,
+      marginTop: 10,
+    },
+    continueText: {
+      fontSize: 16,
+      fontFamily: Fonts.Bold,
+      color: '#fff',
     },
   });

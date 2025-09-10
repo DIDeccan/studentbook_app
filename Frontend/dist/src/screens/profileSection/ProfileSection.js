@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { cache, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,165 +6,216 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Modal
+  Modal,
+  Alert
 } from 'react-native';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { SF, SH, SW } from '../../utils/dimensions';
-import { AboutUs, ContackUsIcon, deleteIcon, LogoutIcon, PasswordlockIcon, PrivacyPolicy, ProfileIcon, TermsCondtions } from '../../images';
+import { AboutUs, ContackUsIcon, deleteIcon, LogoutIcon, PasswordlockIcon, PrivacyPolicy, ProfileIcon, TermsCondtions, userProfile } from '../../images';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { darkColors, lightColors } from '../../utils/Colors';
+import { getProfile } from '../../redux/reducer/profileReducer';
+import { unwrapResult } from "@reduxjs/toolkit";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logoutAction, logoutActionReducer } from '../../redux/reducer/authReducer';
 
 const ProfileSection = ({ navigation }) => {
-    const dispatch = useDispatch();
-     const themeMode = useSelector((state) => state.theme.theme);
-    let colors = (themeMode === 'dark') ? darkColors : lightColors;
-    const styles = themedStyles(colors);
+  const dispatch = useDispatch()
+  const getProfileData = useSelector((state)=> state.profile.getProfileData)
+  const themeMode = useSelector((state) => state.theme.theme);
+  let colors = (themeMode === 'dark') ? darkColors : lightColors;
+  const styles = themedStyles(colors);
   const [logout, setLogOut] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const profileData = useSelector(state => state.profileData);
+  const { refresh_token, loading, } = useSelector((state) => state.auth)
+const[refresh1,setRefresh] = useState(null)
+  const app = async () => {
+    let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
+    console.log(refreshToken, "========refresh=====", refresh_token, "refresh_token",)
+    setRefresh(refreshToken)
+  };
+//console.log(getProfileData,"===============fet")
+  useEffect(() => {
+    app()
+   dispatch(getProfile({ student_id: 148, class_id: 2}))
+   setProfileImage(getProfileData?.profile_image);
+  }, [dispatch])
 
   const EditProfileBtn = () => {
     navigation.navigate('EditProfile');
   };
 
-  const handleConfirmLogout = () => {
-    setLogOut(false);
-    // Add your actual logout logic here
-    console.log("User logged out");
-  };
+const handleConfirmLogout = async () => {
+  try {
+    let rawToken = refresh1 || (await AsyncStorage.getItem("refresh_token"));
+    const refreshToken = rawToken?.replace(/^['"]+|['"]+$/g, "");
+   // navigation.replace("LoginScreen");
+    if (!refreshToken) {
+      Alert.alert("Error", "No refresh token found. Please login again.");
+      return;
+    }else{
+    const res = await dispatch(logoutAction({ refresh: refreshToken }));
 
-const settingScreenBtn = ()=>{
-navigation.navigate('SettingScreen')
-} 
+    if (res.meta.requestStatus === "fulfilled") {
+      // Logout success
+      navigation.replace("LoginScreen");
+    } else if (res.meta.requestStatus === "rejected") {
+      // Logout failed → check payload
+         navigation.replace("LoginScreen");
+      const errorMessage =
+        res.payload?.detail ||
+        res.payload?.message ||
+        "Logout failed. Please try again.";
+      Alert.alert("Error", errorMessage);
+       // navigation.replace("LoginScreen");
+    }
+    }
+  } catch (error) {
+    console.error("Unexpected logout error:", error);
+    Alert.alert("Error", "Something went wrong while logging out.");
+   //  navigation.replace("LoginScreen");
+  }
+};
 
- return (
-  <>
-    <ContainerComponent>
-      {/* <TouchableOpacity onPress={settingScreenBtn}>
+
+  const settingScreenBtn = () => {
+    navigation.navigate('SettingScreen')
+  }
+
+  return (
+    <>
+      <ContainerComponent>``
+        {/* <TouchableOpacity onPress={settingScreenBtn}>
            <Text style={{textAlign:'right'}}>Settings</Text>
       </TouchableOpacity> */}
-    
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-       
-        <Image
-          source={{
-            uri: 'https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-          }}
-          style={styles.profileImage}
-        />
-        <Text style={[styles.name]}>Vasavi Pillala</Text>
-        <Text style={styles.title}>React Native Developer | Vizianagaram</Text>
-      </View>
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View
-          style={{
-            justifyContent: 'center',
-            paddingHorizontal: SW(10),
-            paddingBottom: SH(13),
-            alignContent: 'center'
-          }}
-        >
-          {/* Edit Profile */}
-          <TouchableOpacity onPress={EditProfileBtn} style={[styles.touchableCard, { borderTopLeftRadius: SH(10), borderTopRightRadius: SH(10) }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={ProfileIcon} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
-                Edit Profile
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
 
-          {/* Change Password */}
-          <TouchableOpacity style={styles.touchableCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={PasswordlockIcon} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
-                Change Password
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
+          <Image
+            source={{ uri: profileImage? `http://192.168.0.19:8000/${profileImage}`: 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png' || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}}
+            style={styles.profileImage}
+          />
 
-          {/* Terms & Conditions */}
-          <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate('TermsAndConditions')}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={TermsCondtions} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
-                Terms & Conditions
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
-
-          {/* Privacy Policy */}
-          <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate('PrivacyPolicyScreen')}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={PrivacyPolicy} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
-                Privacy Policy
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
-
-          {/* About Us */}
-          <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate('AboutUs')}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={AboutUs} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
-                About Us
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
-
-          {/* Contact Us */}
-          <TouchableOpacity onPress={() => navigation.navigate('ContactUs')} style={styles.touchableCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={ContackUsIcon} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
-                Contact Us
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
-
-          {/* Notifications */}
-          <TouchableOpacity style={styles.touchableCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image
-                source={{ uri: 'https://cdn-icons-png.freepik.com/512/4556/4556844.png' }}
-                resizeMode="cover"
-                style={styles.iconsStyle}
-              />
-              <Text style={styles.sideHeading}>
-                Notifications
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
-
-          {/* Logout */}
-          <TouchableOpacity
-            style={[styles.touchableCard, { borderBottomLeftRadius: SH(10), borderBottomRightRadius: SH(10) }]}
-            onPress={() => {
-              console.log("hii log out")
-              setLogOut(true)}}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={LogoutIcon} resizeMode="cover" style={styles.iconsStyle} />
-              <Text style={{ fontSize: SF(16), marginHorizontal: SW(10), color: "black" }}>
-                Log Out
-              </Text>
-            </View>
-            <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-          </TouchableOpacity>
+          <Text style={[styles.name]}>Vasavi Pillala</Text>
+          <Text style={styles.title}>React Native Developer | Vizianagaram</Text>
         </View>
-      </ScrollView>  
-    </ContainerComponent>
-        {/* Logout Confirmation Modal */}
+
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+          <View
+            style={{
+              justifyContent: 'center',
+              paddingHorizontal: SW(10),
+              paddingBottom: SH(13),
+              alignContent: 'center'
+            }}
+          >
+            {/* Edit Profile */}
+            <TouchableOpacity onPress={EditProfileBtn} style={[styles.touchableCard, { borderTopLeftRadius: SH(10), borderTopRightRadius: SH(10) }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={ProfileIcon} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
+                  Edit Profile
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* Change Password */}
+            <TouchableOpacity style={styles.touchableCard} onPress={()=> navigation.navigate("ChangePassword")}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={PasswordlockIcon} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
+                  Change Password
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* Terms & Conditions */}
+            <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate('TermsAndConditions')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={TermsCondtions} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
+                  Terms & Conditions
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* Privacy Policy */}
+            <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate('PrivacyPolicyScreen')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={PrivacyPolicy} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
+                  Privacy Policy
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* About Us */}
+            <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate('AboutUs')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={AboutUs} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
+                  About Us
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* Contact Us */}
+            <TouchableOpacity onPress={() => navigation.navigate('ContactUs')} style={styles.touchableCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={ContackUsIcon} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
+                  Contact Us
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* Notifications */}
+            <TouchableOpacity style={styles.touchableCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image
+                  source={{ uri: 'https://cdn-icons-png.freepik.com/512/4556/4556844.png' }}
+                  resizeMode="cover"
+                  style={styles.iconsStyle}
+                />
+                <Text style={styles.sideHeading}>
+                  Notifications
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+
+            {/* Logout */}
+            <TouchableOpacity
+              style={[styles.touchableCard, { borderBottomLeftRadius: SH(10), borderBottomRightRadius: SH(10) }]}
+              onPress={async () => {
+                setLogOut(true)
+                let refresh = await AsyncStorage.getItem('refresh_token')
+                console.log(refresh, "===")
+                setRefresh(refresh)
+
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={LogoutIcon} resizeMode="cover" style={styles.iconsStyle} />
+                <Text style={{ fontSize: SF(16), marginHorizontal: SW(10), color: "black" }}>
+                  Log Out
+                </Text>
+              </View>
+              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </ContainerComponent>
+      {/* Logout Confirmation Modal */}
       <Modal
         visible={logout}
         transparent
@@ -182,7 +233,7 @@ navigation.navigate('SettingScreen')
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLogout}>
-                <Text style={styles.confirmText}>Log Out</Text>
+                <Text>{loading ? "Logging out..." : "Logout"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -192,7 +243,7 @@ navigation.navigate('SettingScreen')
   );
 };
 
-const themedStyles =(colors)=> StyleSheet.create({
+const themedStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -211,13 +262,13 @@ const themedStyles =(colors)=> StyleSheet.create({
   name: {
     fontSize: SF(18),
     fontWeight: 'bold',
-    color:colors.text
+    color: colors.text
   },
   title: {
     color: '#666',
     fontSize: SF(13),
     marginTop: 4,
-    color:colors.text
+    color: colors.text
   },
   touchableCard: {
     flexDirection: 'row',
@@ -286,9 +337,9 @@ const themedStyles =(colors)=> StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold'
   },
-  sideHeading:{
+  sideHeading: {
     fontSize: SF(16),
-     marginHorizontal: SW(10),
+    marginHorizontal: SW(10),
     // color:colors.background
   }
 });
