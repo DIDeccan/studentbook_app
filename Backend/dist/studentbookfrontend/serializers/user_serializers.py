@@ -108,6 +108,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['message_type'] = "success"
         if user.user_type == 'student':
             data['student_id'] = user.student.id if hasattr(user, 'student') else None
+            data['class_id'] = user.student.student_class.id if hasattr(user, 'student') and user.student.student_class else None
             data['is_paid'] = StudentPackage.objects.filter(student=user).exists()
 
         return data
@@ -124,20 +125,24 @@ class SchoolSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class StudentPackageSerializer(serializers.ModelSerializer):
-    course = ClassSerializer(read_only=True)  # nested course info
+    # course = ClassSerializer(read_only=True)  # nested course info
+    class_id = serializers.IntegerField(source='course.id', read_only=True)
+    student_package_id = serializers.IntegerField(source='id', read_only=True)
 
     class Meta:
         model = StudentPackage
-        fields = ['id', 'course', 'price', 'subscription_taken_from', 'subscription_valid_till']
+        fields = ['student_package_id', 'class_id', 'price', 'subscription_taken_from', 'subscription_valid_till']
 
 class StudentSerializer(serializers.ModelSerializer):
     student_packages = StudentPackageSerializer(many=True, read_only=True)
+    class_id = serializers.IntegerField(source='student_class.id', read_only=True)
+    student_id = serializers.IntegerField(source='id', read_only=True)
 
     class Meta:
         model = Student
-        fields = ['id', 'email', 'first_name', 'last_name', 'school','profile_image','is_active','phone_number','address','city',
-                  'state','zip_code','user_type','school','student_class','student_packages']
-        read_only_fields = ['user_type','student_class', 'student_packages']
+        fields = ['student_id', 'email', 'first_name', 'last_name', 'school','profile_image','is_active','phone_number','address','city',
+                  'state','zip_code','user_type','school','class_id','student_packages']
+        read_only_fields = ['user_type','class_id', 'student_packages']
         # fields = '__all__'
 
 class UserSerializer(serializers.ModelSerializer):

@@ -257,7 +257,7 @@ class LogoutView(APIView):
             return api_response(
                 message="Logged out successfully.",
                 message_type="success",
-                status_code=status.HTTP_205_RESET_CONTENT
+                status_code=status.Http_200_OK
                         )
 
         except TokenError:
@@ -444,7 +444,7 @@ class StudentRegisterAPIView(APIView):
                 )
         else:
 
-            class_name = json_data['student_class']
+            class_name = json_data['class_id']
             try:
                 class_obj = Class.objects.get(id=class_name)
             except Class.DoesNotExist:
@@ -608,6 +608,7 @@ class ResendOtpAPIView(APIView):
     def post(self, request, *args, **kwargs):
         json_data = request.data
         phone_number = json_data.get('phone_number',None)
+        new_phone_number = json_data.get('new_phone_number',None)
         if phone_number is None:
             return api_response(
                             message="Provide Phone Number",
@@ -627,12 +628,11 @@ class ResendOtpAPIView(APIView):
                         )
         
         # send_otp_email(user,'Registration OTP')
-        responce = send_otp_phone_number(user,'Registration OTP')
-        # return api_response(
-        #                 message="OTP sent to your Phone Number.",
-        #                 message_type="success",
-        #                 status_code=status.HTTP_200_OK
-        #             )
+        if phone_number and not new_phone_number:
+            responce = send_otp_phone_number(user,'Registration OTP')
+        elif phone_number and new_phone_number:
+            responce = send_otp_newphone_number(user,'OTP For Phone number change',new_phone_number)
+    
         return responce
     
 class OtpVerificationAPIView(APIView):
