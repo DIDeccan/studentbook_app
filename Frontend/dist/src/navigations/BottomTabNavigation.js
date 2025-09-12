@@ -49,7 +49,7 @@ const BottomTabNavigations = () => {
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'Profile':
-              iconName = focused ? 'cloud-upload' : 'cloud-upload-outline';
+              iconName = focused ? 'person' : 'person-outline';
               break;
             case 'learn':
               iconName = focused ? 'chatbubble' : 'chatbubble-outline';

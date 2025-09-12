@@ -95,7 +95,7 @@ const handleConfirmLogout = async () => {
         <View style={styles.profileHeader}>
 
           <Image
-            source={{ uri: profileImage? `http://192.168.0.19:8000/${profileImage}`: 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png' || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}}
+            source={{ uri: `http://192.168.0.19:8000/${profileImage}` || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}}
             style={styles.profileImage}
           />
 

@@ -15,13 +15,13 @@ const SplashScreen = ({navigation}) => {
 console.log(isPaid,"ispaid")
   console.log("tokenS",access)
 if(access !== null && isPaid == 'true'){
-   navigation.replace('BottomTabNavigations');
+  // navigation.replace('BottomTabNavigations');
 }else if(access !== null){
-    navigation.replace('SignUpScreen');
+   //S navigation.replace('SignUpScreen');
 }
     }
       useEffect(()=>{
-      intialPage()
+    //  intialPage()
     })
    useEffect(() => {
     const timer = setTimeout(() => {

@@ -120,7 +120,7 @@ export const verifyOtp = createAsyncThunk(
       address,
       zip_code,
       user_type,
-      student_class,
+      class_id,
       is_active,
       password,
       otp,
@@ -132,7 +132,7 @@ export const verifyOtp = createAsyncThunk(
       address: string;
       zip_code: string | number;
       user_type: string;
-      student_class: string | number;
+      class_id: string | number;
       is_active: boolean;
       password: string;
       otp: string | number;
@@ -148,7 +148,7 @@ export const verifyOtp = createAsyncThunk(
         address,
         zip_code,
         user_type,
-        student_class,
+        class_id,
         is_active,
         password,
         otp,
@@ -317,7 +317,7 @@ export const resetPassword = createAsyncThunk(
 export const CreateOrder = createAsyncThunk(
   'CreateOrder',
   async (
-    { student_class, price }: { student_class: string; price: string },
+    { class_id, price }: { class_id: string; price: string },
     { getState, fulfillWithValue, rejectWithValue }
   ) => {
     try {
@@ -326,7 +326,7 @@ export const CreateOrder = createAsyncThunk(
       const rawToken = state.auth?.token || storedToken
       const token = rawToken?.replace(/^['"]+|['"]+$/g, "")
      
-      const data = { student_class, price };
+      const data = {class_id, price };
 
       const response = await api.post(endpoints.CREATE_ORDER, data, {
         headers: {

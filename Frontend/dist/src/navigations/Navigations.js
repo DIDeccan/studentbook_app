@@ -21,6 +21,8 @@ import SettingScreen from '../screens/profileSection/SettingScreen';
 import ForgotPassword from '../screens/auth/forgotPassword/ForgotPassword';
 import CreatePassword from '../screens/auth/forgotPassword/CreatePassword';
 import ChangePasswordScreen from '../screens/profileSection/ChangePassword';
+import YogaVideosContent from '../screens/chooseContant/YogaVideosContent';
+import HealthTips from '../screens/chooseContant/HealthTips';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +56,8 @@ const Navigations = () => {
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
        <Stack.Screen name="CreatePassword" component={CreatePassword} />
          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+             <Stack.Screen name="YogaVideos" component={YogaVideosContent} />
+                 <Stack.Screen name="HealthTips" component={HealthTips} />
     </Stack.Navigator>
   );
 };

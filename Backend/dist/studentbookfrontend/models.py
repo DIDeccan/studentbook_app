@@ -3,7 +3,20 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.utils import timezone
 from datetime import timedelta
 from smart_selects.db_fields import ChainedForeignKey
+import datetime
+def generate_transaction_id():
+    today = datetime.date.today().strftime("%Y%m%d")  # e.g. 20250903
+    last_order = SubscriptionOrder.objects.filter(
+        transaction_id__startswith=f"TXN{today}"
+    ).order_by("id").last()
 
+    if last_order and last_order.transaction_id:
+        last_number = int(last_order.transaction_id[-4:])  # last 4 digits
+        new_number = last_number + 1
+    else:
+        new_number = 1
+
+    return f"TXN{today}{new_number:04d}"
 # Create your models here.
 
 
@@ -177,6 +190,9 @@ class SubscriptionOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     payment_status = models.CharField(max_length=20,choices=PAYMENT_STATUS,default="pending")
+    transaction_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    payment_mode = models.CharField(max_length=50, null=True, blank=True)
+
 
     subscription_start = models.DateField(default=timezone.now)
     subscription_end = models.DateField(blank=True, null=True)
@@ -186,6 +202,9 @@ class SubscriptionOrder(models.Model):
         Automatically set subscription_end to 1 year (365 days) after
         subscription_start if not provided manually.
         """
+        if not self.transaction_id:  # only generate if missing
+            self.transaction_id = generate_transaction_id()
+
         if not self.subscription_end:
             self.subscription_end = self.subscription_start + timedelta(days=365)
         super().save(*args, **kwargs)

@@ -10,7 +10,7 @@ from datetime import timedelta
 from studentbookfrontend.helper.api_response import api_response
 
 rz_client = RazorpayClient()
-
+client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 class RazorpayOrderAPIView(APIView):
     """This API will create an order"""
 
@@ -18,8 +18,20 @@ class RazorpayOrderAPIView(APIView):
 
     def post(self, request):
         user = request.user
-        # student_class_id = request.data.get("student_class")
+        student_class_id = request.data.get("class_id")
+        if not student_class_id:
+                return api_response(
+                    message="Class Id Not Given",
+                    message_type="error",
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
         amount = request.data.get("price")
+        if not student_class_id:
+                return api_response(
+                    message="Class Id Not Given",
+                    message_type="error",
+                    status_code=status.HTTP_400_BAD_REQUEST
+                )
 
   
 
@@ -36,7 +48,7 @@ class RazorpayOrderAPIView(APIView):
 
             subscriptionorder = SubscriptionOrder(
                 student = user,
-                course = user.student_class,
+                course = Class.objects.get(id=student_class_id),
                 price = amount
             )
 
@@ -46,7 +58,7 @@ class RazorpayOrderAPIView(APIView):
  
             return api_response(
                 message="Order created",
-                message_type="created",
+                message_type="success",
                 status_code=status.HTTP_201_CREATED,
                 data = order_response
             )
@@ -93,6 +105,8 @@ class TransactionAPIView(APIView):
 
             student = request.user
 
+            payment = rz_client.payment.fetch(data.get("razorpay_payment_id"))
+            payment_method = payment.get("method")
       
 
 
@@ -110,6 +124,7 @@ class TransactionAPIView(APIView):
             )
             
             subscriptionorder.payment_status = 'completed'
+            subscriptionorder.payment_mode = payment_method if payment_method else 'NA'
             subscriptionorder.save()
             # Activate student if inactive
             if not student.is_active:
@@ -117,7 +132,9 @@ class TransactionAPIView(APIView):
                 student.save()
 
             data = {
-                "student_package_id": student_package.id
+                "student_package_id": student_package.id,
+                "student_id": student.id,
+                "class_id": student_package.course.id
             }
             return api_response(
                         message="Transaction verified and course added to student packages",

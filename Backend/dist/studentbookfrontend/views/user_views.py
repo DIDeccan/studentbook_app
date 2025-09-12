@@ -104,7 +104,7 @@ class ClassListAPIView(APIView):
     # permission_classes = [IsAuthenticated]
     queryset = Class.objects.all()
     def get(self, request, format=None):
-        classes = Class.objects.all()
+        classes = Class.objects.all().order_by('id')
         serializer = ClassSerializer(classes, many=True)    
         return api_response(
             message="Class List Data.",
@@ -257,7 +257,7 @@ class LogoutView(APIView):
             return api_response(
                 message="Logged out successfully.",
                 message_type="success",
-                status_code=status.HTTP_205_RESET_CONTENT
+                status_code=status.Http_200_OK
                         )
 
         except TokenError:
@@ -351,7 +351,7 @@ class ForgotPasswordAPIView(APIView):
                         )
 
 
-        if  new_password and confirm_new_password:
+        if not otp and new_password and confirm_new_password:
             if not all([ new_password, confirm_new_password]):
                 return api_response(
                 message="All fields are required.",
@@ -371,6 +371,11 @@ class ForgotPasswordAPIView(APIView):
                 user.otp_verified = True
                 user.otp = None  # Clear OTP after successful password reset
                 user.save()
+                return api_response(
+                    message="Password reset successfully.",
+                    message_type="success",
+                    status_code=status.HTTP_200_OK
+                )
 
 
         else:
@@ -439,7 +444,7 @@ class StudentRegisterAPIView(APIView):
                 )
         else:
 
-            class_name = json_data['student_class']
+            class_name = json_data['class_id']
             try:
                 class_obj = Class.objects.get(id=class_name)
             except Class.DoesNotExist:
@@ -577,7 +582,7 @@ class ChangePasswordAPIView(APIView):
 class ClassListDemoVideosApi(APIView):
 
     def get(self, request, *args, **kwargs):
-        class_list = Class.objects.all()
+        class_list = Class.objects.all().order_by('id')
         data = []
 
         for class_data in class_list:
@@ -603,6 +608,7 @@ class ResendOtpAPIView(APIView):
     def post(self, request, *args, **kwargs):
         json_data = request.data
         phone_number = json_data.get('phone_number',None)
+        new_phone_number = json_data.get('new_phone_number',None)
         if phone_number is None:
             return api_response(
                             message="Provide Phone Number",
@@ -622,12 +628,11 @@ class ResendOtpAPIView(APIView):
                         )
         
         # send_otp_email(user,'Registration OTP')
-        responce = send_otp_phone_number(user,'Registration OTP')
-        # return api_response(
-        #                 message="OTP sent to your Phone Number.",
-        #                 message_type="success",
-        #                 status_code=status.HTTP_200_OK
-        #             )
+        if phone_number and not new_phone_number:
+            responce = send_otp_phone_number(user,'Registration OTP')
+        elif phone_number and new_phone_number:
+            responce = send_otp_newphone_number(user,'OTP For Phone number change',new_phone_number)
+    
         return responce
     
 class OtpVerificationAPIView(APIView):

@@ -121,14 +121,14 @@ const SignUpScreen = ({ navigation }) => {
             address: '',
             zip_code: '',
             user_type: 'student',
-            student_class: value,
+            class_id: value,
             is_active: false,
             password: password,
             confirm_password: confirmPassword
           }),
         ).unwrap();
 
-        //   console.log('Signup Success:', result);
+          console.log('Signup Success:', result);
         Alert.alert('Success', result?.message || 'OTP Verified', [
           {
             text: 'OK',
@@ -137,7 +137,7 @@ const SignUpScreen = ({ navigation }) => {
         ]);
         //  Alert.alert('Success', result.message);
       } catch (err) {
-        // console.error('Signup Error:', err);
+        console.error('Signup Error:', err);
         Alert.alert(
           'Failed',
           typeof err === 'string'
@@ -172,7 +172,7 @@ const SignUpScreen = ({ navigation }) => {
 
       const result = await dispatch(
         CreateOrder({
-          student_class: value ||3,
+          class_id: value ||3,
           price: price || 3000,//parseInt(item.amount, 10)
         })
       );
@@ -181,6 +181,7 @@ const SignUpScreen = ({ navigation }) => {
         const newOrderId = result.payload?.data?.id;
         setrazorpay_order_id(newOrderId);
         await onPayment(newOrderId); // pass fresh orderId
+         setOtpSuccessPopup(false)
       } else {
         Alert.alert('Failed', 'Could not create order, please try again');
       }
@@ -215,13 +216,6 @@ const SignUpScreen = ({ navigation }) => {
       RazorpayCheckout.open(options)
         .then(async data => {
           try {
-            // success popup from Razorpay
-            // Alert.alert(
-            //   'Payment Success',
-            //   `Payment ID: ${data.razorpay_payment_id}\nSignature: ${data.razorpay_signature}`,
-            // );
-
-            // verify payment in backend
             const result = await dispatch(
               paymentVerify({
                 razorpay_payment_id: data.razorpay_payment_id,
@@ -363,8 +357,6 @@ const SignUpScreen = ({ navigation }) => {
                 searchPlaceholder="Search..."
                 value={value}
                 onFocus={() => {
-                  console.log('Dropdown opened');
-                  // 🔹 Load or render your data here
                   dispatch(getClassNames());
                 }}
                 onChange={item => {
@@ -488,7 +480,7 @@ const SignUpScreen = ({ navigation }) => {
             <OTPInput
               length={6}
               onSubmit={async otp => {
-                //console.log('✅ OTP from child:', otp);
+                //console.log('OTP from child:', otp);
                 try {
                   setLoading(true)
                   const result = await dispatch(
@@ -500,7 +492,7 @@ const SignUpScreen = ({ navigation }) => {
                       address: '',
                       zip_code: '',
                       user_type: 'student',
-                      student_class: 2,
+                      class_id: value,
                       is_active: false,
                       password: password,
                       otp: otp, // use entered otp instead of hardcoded
@@ -528,7 +520,7 @@ const SignUpScreen = ({ navigation }) => {
                       ],
                     );
                   } else if (verifyOtp.rejected.match(result)) {
-                    //  console.log('Error:', result.payload);
+                    console.log('Error:', result.payload);
                     Alert.alert(
                       'Error',
                       result.payload?.message || 'OTP verification failed',
@@ -545,7 +537,7 @@ const SignUpScreen = ({ navigation }) => {
                 }
               }}
               onResend={() => {
-                console.log('🔄 Resend clicked');
+               // console.log('🔄 Resend clicked');
                 dispatch(
                   reSendOtp({
                     phone_number: phone,

@@ -87,8 +87,8 @@ console.log("ref===", ref);
     props.navigation.navigate('SignUpScreen');
   };
   const goToForgetPassword = () => {
-    props.navigation.navigate('ForgotPassword');
-     //props.navigation.navigate('BottomTabNavigations');
+   // props.navigation.navigate('ForgotPassword');
+     props.navigation.navigate('BottomTabNavigations');
   };
 
   return (
