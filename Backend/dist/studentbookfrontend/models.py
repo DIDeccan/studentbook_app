@@ -111,6 +111,7 @@ class User(AbstractBaseUser):
     user_type = models.CharField(max_length=20, null=True,choices=USER_TYPE_CHOICES)
     login_time = models.DateTimeField(null=True)
     otp_verified = models.BooleanField(default=False)
+    logout_time = models.DateTimeField(null=True)
     registered_date = models.DateTimeField(auto_now_add=True)
     objects = UserManager()
 
