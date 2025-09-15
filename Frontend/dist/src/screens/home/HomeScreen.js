@@ -2,18 +2,19 @@ import { Image, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'rea
 import React, { useEffect, useState } from 'react';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { ImageBackground } from 'react-native';
-import { childrenImg, loginImg, userProfile } from '../../images';
+import { childrenImg, loginImg, Spalsh_Logo1, userProfile } from '../../images';
 import { SF, SH, SW } from '../../utils/dimensions';
 import { ScrollView } from 'react-native';
 import { FlatList } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../../redux/reducer/themeReducer';
 import { darkColors, lightColors } from '../../utils/Colors';
-import FontAwesome5 from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AmazonAdsCarousel from '../../components/commonComponents/AmazonAdsCard';
 import LinearGradient from 'react-native-linear-gradient';
+import HalfWatchedVideos from '../../components/commonComponents/HalfWatchedVideos';
 
 const { width, height } = Dimensions.get('window');
 
@@ -106,7 +107,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={loginImg}
+              source={Spalsh_Logo1}
               resizeMode="cover"
               style={styles.logo}
             />
@@ -124,9 +125,9 @@ const HomeScreen = ({ navigation }) => {
               onPress={() => dispatch(toggleTheme())}
             >
               {themeMode === 'light' ? (
-                <FontAwesome5 name="moon-outline" size={22} color={colors.text} />
+                <Ionicons name="moon-outline" size={22} color={colors.text} />
               ) : (
-                <FontAwesome5 name="sunny-outline" size={22} color={colors.text} />
+                <Ionicons name="sunny-outline" size={22} color={colors.text} />
               )}
             </TouchableOpacity>
           </View>
@@ -174,9 +175,7 @@ const HomeScreen = ({ navigation }) => {
                 My Content
               </Text>
               <TouchableOpacity>
-                <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                  See All
-                </Text>
+                <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
               </TouchableOpacity>
             </View>
             
@@ -196,24 +195,24 @@ const HomeScreen = ({ navigation }) => {
                 Continue Watching
               </Text>
               <TouchableOpacity>
-                <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                  See All
-                </Text>
+                  <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
               </TouchableOpacity>
             </View>
-            
-            <FlatList
+              <HalfWatchedVideos/>
+            {/* <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
               data={ContentData.slice(0, 4)}
               renderItem={renderContentItem}
               keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.contentList}
-            />
+            /> */}
+
           </View>
 
+  
           {/* Featured Section */}
-          <View style={[styles.featuredContainer, { backgroundColor: colors.cardBackground }]}>
+          {/* <View style={[styles.featuredContainer, { backgroundColor: colors.cardBackground }]}>
             <View style={styles.featuredHeader}>
               <MaterialIcons name="featured-play-list" size={24} color={colors.primary} />
               <Text style={[styles.featuredTitle, { color: colors.text }]}>
@@ -237,7 +236,7 @@ const HomeScreen = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </View> */}
         </ScrollView>
       </View>
     </ContainerComponent>
@@ -363,19 +362,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: SW(15),
   },
   contentCard: {
-    width: SW(120),
+    width: SW(180),
     marginRight: SW(15),
     borderRadius: SH(12),
     overflow: 'hidden',
-    elevation: 2,
+  //  backgroundColor:'white',
+   // elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
+    borderWidth:1,
+  
   },
   imageContainer: {
     position: 'relative',
-    height: SH(100),
+    height: SH(120),
   },
   contentImage: {
     height: '100%',

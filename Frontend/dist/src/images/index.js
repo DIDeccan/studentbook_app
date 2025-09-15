@@ -1,4 +1,5 @@
 
+	export const Spalsh_Logo1= require('./corrected.png')
 	export const Spalsh_Logo= require('./splash.jpg')
 	export const Swiper_First= require('./LottieAnimation/GetSliderOne.json')
 	export const Swiper_Two= require('./LottieAnimation/GetSlidertwo.json')

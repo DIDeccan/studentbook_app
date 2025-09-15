@@ -1,11 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
+import ContainerComponent from '../../components/commonComponents/Container'
 
 const YogaVideosContent = () => {
   return (
-    <View>
+    <ContainerComponent>
+   <View>
       <Text>YogaVideosContent</Text>
     </View>
+    </ContainerComponent> 
   )
 }
 

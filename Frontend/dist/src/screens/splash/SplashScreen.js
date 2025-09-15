@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, Image } from 'react-native';
 import React,{useEffect} from 'react';
-import { SW, SH } from '../../utils/dimensions';
-import { loginImg, Spalsh_Logo } from '../../images/index.js';
+import { SW, SH, SF } from '../../utils/dimensions';
+import { loginImg, Spalsh_Logo, Spalsh_Logo1 } from '../../images/index.js';
 import ContainerComponent from '../../components/commonComponents/Container.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
@@ -15,18 +15,18 @@ const SplashScreen = ({navigation}) => {
 console.log(isPaid,"ispaid")
   console.log("tokenS",access)
 if(access !== null && isPaid == 'true'){
-  // navigation.replace('BottomTabNavigations');
+   navigation.replace('BottomTabNavigations');
 }else if(access !== null){
-   //S navigation.replace('SignUpScreen');
+    navigation.replace('SignUpScreen');
 }
     }
-      useEffect(()=>{
-    //  intialPage()
+  useEffect(()=>{
+    intialPage()
     })
    useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('SwipperScreen');
-    }, 3000);
+    }, 4000);
     return () => clearTimeout(timer); // cleanup
   }, [navigation]);
 
@@ -37,8 +37,9 @@ if(access !== null && isPaid == 'true'){
           <Image
             style={styles.valuxlogoimg}
             resizeMode="contain"
-            source={loginImg}
+            source={Spalsh_Logo1}
           />
+          <Text style={{fontSize:SF(20),textAlign:'center'}}>Student Book</Text>
         </View>
       </View>
     </ContainerComponent>

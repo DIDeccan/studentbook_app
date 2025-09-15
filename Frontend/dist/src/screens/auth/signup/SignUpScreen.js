@@ -80,8 +80,10 @@ const SignUpScreen = ({ navigation }) => {
     let refresh = await AsyncStorage.getItem('refresh_token')
     let access = await AsyncStorage.getItem('access_token')
     let isPaid = await AsyncStorage.getItem('isPaid')
-    console.log(access, "=====acess===")
-    console.log(isPaid, "=====isPaid=====")
+  let stent =  await AsyncStorage.getItem("studentId", String(result?.data?.student_id))
+  const classId =  await AsyncStorage.getItem("classId",String(result?.data?.class_id))
+    console.log(access, "=====acess===",stent)
+    console.log(isPaid, "=====isPaid=====",classId)
     if (isPaid == 'false') {
       setOtpSuccessPopup(true)
     }
@@ -225,8 +227,10 @@ const SignUpScreen = ({ navigation }) => {
             ).unwrap();
   setOtpSuccessPopup(false)
             console.log("Payment Verify :", result);
-              console.log("Payment Verify Payload:", result.payload);
-         
+          await AsyncStorage.setItem("studentId",result?.data?.student_id)
+          await AsyncStorage.setItem("classId",result?.data?.class_id)
+  navigation.navigate('BottomTabNavigations');
+          
             Alert.alert(
               "Payment Verification",
               result?.message || "Payment verified successfully", [
@@ -239,10 +243,7 @@ const SignUpScreen = ({ navigation }) => {
               },
             ],
             );
-            if (result?.message_type === "success") {
-              await AsyncStorage.setItem("isPaid", JSON.stringify(true))
-              // navigation.navigate('BottomTabNavigations');
-            }
+          
           } catch (verifyErr) {
             console.error("Verify Failed:", verifyErr);
             Alert.alert("Payment Failed", verifyErr?.message || "Verification failed", [

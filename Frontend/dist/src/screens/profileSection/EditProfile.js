@@ -11,76 +11,74 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { SF, SH, SW } from '../../utils/dimensions';
 import { useDispatch, useSelector } from 'react-redux';
-import { getProfile, updateProfile } from '../../redux/reducer/profileReducer';
+import { getProfile, SendOtpUpdatePhoneNumber, updateProfile, VerifyUpdatePhoneNumber } from '../../redux/reducer/profileReducer';
+import { baseURL } from '../../utils/config/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Entypo from 'react-native-vector-icons/Entypo';
+import OTPInput from '../../components/commonComponents/OTPInput';
 
 const EditProfile = () => {
   const dispatch = useDispatch();
   const getProfileData = useSelector((state) => state.profile.getProfileData);
   const { loading } = useSelector((state) => state.profile);
-
-  // form fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [profileImage, setProfileImage] = useState('');
-
-  // original snapshot (for comparisons)
+  const [profileImage, setProfileImage] = useState(getProfileData?.profile_image);
+  const[studentId,setStudentID] = useState('')
+  const[classIs,setClassId] = useState('')
   const [originalData, setOriginalData] = useState(null);
-
-  // changed flags
   const [nameChanged, setNameChanged] = useState(false);
   const [emailChanged, setEmailChanged] = useState(false);
   const [imageChanged, setImageChanged] = useState(false);
   const [phoneChanged, setPhoneChanged] = useState(false);
-
-  // phone verification state
-  const [phoneVerified, setPhoneVerified] = useState(true); // assumed verified from server initially
+  const [phoneVerified, setPhoneVerified] = useState(true);
   const [verifying, setVerifying] = useState(false);
-
-  // computed: whether Save should be enabled
   const [isSaveEnabled, setIsSaveEnabled] = useState(false);
-
-  // Fetch profile once and set original snapshot
+  const [showOtpModal, setShowOtpModal] = useState(false);
   useEffect(() => {
     const fetch = async () => {
-      await dispatch(getProfile({ student_id: 148, class_id: 2 }));
+      let studentId = await AsyncStorage.getItem('studentId')
+      let classId = await AsyncStorage.getItem('classId')
+      setClassId(studentId)
+      setClassId(classId)
+        dispatch(getProfile({ student_id: studentId, class_id: classId}))
     };
     fetch();
   }, [dispatch]);
 
-  // When profile arrives, initialize fields & reset flags
   useEffect(() => {
+    console.log("====", profileImage,"====profile====")
     if (!getProfileData) return;
     const orig = {
-      first_name: getProfileData.first_name || '',
-      email: getProfileData.email || '',
-      phone_number: getProfileData.phone_number || '',
-      profile_image: getProfileData.profile_image || '',
+      first_name: getProfileData?.first_name || '',
+      email: getProfileData?.email || '',
+      phone_number: getProfileData?.phone_number || '',
+      profile_image: getProfileData?.profile_image || null,
     };
     setOriginalData(orig);
     setName(orig.first_name);
     setEmail(orig.email);
     setPhone(orig.phone_number);
     setProfileImage(orig.profile_image);
-    // reset change flags
     setNameChanged(false);
     setEmailChanged(false);
     setImageChanged(false);
     setPhoneChanged(false);
-    setPhoneVerified(true); // server told us it was verified previously
+    setPhoneVerified(true); 
     setIsSaveEnabled(false);
   }, [getProfileData]);
 
   // Helpers
   const normalize = (v) => (v === undefined || v === null ? '' : String(v));
 
-  // Update change flags whenever fields update
   useEffect(() => {
     if (!originalData) return;
 
@@ -88,94 +86,73 @@ const EditProfile = () => {
     const emailDiff = normalize(email) !== normalize(originalData.email);
     const phoneDiff = normalize(phone) !== normalize(originalData.phone_number);
 
-    // imageChanged is set at image pick time (we don't try to compare URIs)
     setNameChanged(nameDiff);
     setEmailChanged(emailDiff);
     setPhoneChanged(phoneDiff);
-
-    // If user edits phone and it differs -> phone must be re-verified
     if (phoneDiff) {
-      // On any phone change, require verification again
       setPhoneVerified(false);
     } else {
-      // if phone matches original, then it's considered verified by server
       setPhoneVerified(true);
     }
   }, [name, email, phone, originalData]);
 
-  // Compute whether Save should be enabled:
-  // - If phone is changed and not verified -> disable save.
-  // - Otherwise enable save if any of name/email/image/phone changed.
   useEffect(() => {
     const anyNonPhoneChange = nameChanged || emailChanged || imageChanged;
     if (phoneChanged && !phoneVerified) {
       setIsSaveEnabled(false);
       return;
     }
-    // if phoneChanged but verified, it counts as a change that allows save
     const canSave = anyNonPhoneChange || phoneChanged;
     setIsSaveEnabled(Boolean(canSave));
   }, [nameChanged, emailChanged, imageChanged, phoneChanged, phoneVerified]);
 
-  // Save handler (example - adapt FormData according to your API)
   const handleSave = async () => {
     try {
-      // If your API expects FormData for images, build it. Otherwise adjust.
-      const useFormData = imageChanged && profileImage && profileImage.startsWith('file');
-      if (useFormData) {
-        const formData = new FormData();
-        formData.append('student_id', '148');
-        formData.append('class_id', '2');
-        formData.append('email', email);
-        formData.append('first_name', name);
-        formData.append('phone_number', phone);
-        formData.append('profile_image', {
-          uri: profileImage,
-          name: 'profile.jpg',
-          type: 'image/jpeg',
-        });
-        await dispatch(updateProfile(formData)).unwrap();
-      } else {
-        // plain object (API may accept URL/path or same key)
+      let studentId = await AsyncStorage.getItem('studentId')
+      let classId = await AsyncStorage.getItem('classId')
         await dispatch(
           updateProfile({
-            student_id: 148,
-            class_id: 2,
+            student_id: studentId,
+            class_id: classId,
             email,
             first_name: name,
             phone_number: phone,
             profile_image: profileImage,
           })
         ).unwrap();
-      }
+      
 
       Alert.alert('Success', 'Profile updated successfully');
       // refresh profile and reset flags
-      await dispatch(getProfile({ student_id: 148, class_id: 2 }));
+      await dispatch(getProfile({ student_id: studentId, class_id: classId}));
     } catch (err) {
       console.log('Update failed:', err);
       Alert.alert('Error', 'Failed to update profile. Try again.');
     }
   };
 
-  // Phone verify (mock: replace with actual API flow)
   const handleVerifyPhone = async () => {
     setVerifying(true);
-    try {
-      // put real verification flow here (send OTP, confirm etc.)
-      // simulate success
-      setTimeout(() => {
-        setVerifying(false);
-        setPhoneVerified(true);
-        Alert.alert('Verified', 'Phone number verified successfully');
-      }, 1200);
-    } catch (e) {
-      setVerifying(false);
-      Alert.alert('Error', 'Verification failed');
+    setShowOtpModal(true)
+      try {
+      let studentId = await AsyncStorage.getItem('studentId')
+      let classId = await AsyncStorage.getItem('classId')
+        await dispatch(
+          SendOtpUpdatePhoneNumber({
+            student_id: studentId,
+            class_id: classId,
+            new_phone_number:phone
+          })
+        ).unwrap();
+      Alert.alert('Success', 'Otp sent');
+       setShowOtpModal(true) 
+    } catch (err) {
+      console.log('Update failed:', err);
+      Alert.alert('Error', 'Failed to update profile. Try again.');
     }
+    
   };
 
-  // Image pick
   const requestStoragePermission = async () => {
     if (Platform.OS === 'android') {
       const permissionType =
@@ -242,14 +219,18 @@ const EditProfile = () => {
 
       <ScrollView style={styles.container}>
         <View style={styles.profileContainer}>
-          <Image
-            source={{
-              uri: `http://192.168.0.19:8000/${profileImage}`
-               
-                || 'https://static.vecteezy.com/system/resources/previews/058/338/462/non_2x/generic-profile-picture-placeholder-default-user-profile-image-vector.jpg',
-            }}
-            style={styles.profileImage}
-          />
+           <Image
+  source={{
+    uri:
+      profileImage && profileImage.startsWith('file')
+        ? profileImage // picked from camera/gallery
+        : profileImage
+        ? baseURL + profileImage // from backend
+        : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='
+  }}
+  style={styles.profileImage}
+  resizeMode="cover"
+/>
           <TouchableOpacity style={styles.editIcon} onPress={chooseImage}>
             <MaterialIcons name="edit" size={22} color="#fff" />
           </TouchableOpacity>
@@ -312,6 +293,71 @@ const EditProfile = () => {
           <Text style={styles.saveText}>Save Changes</Text>
         </TouchableOpacity>
       </ScrollView>
+           
+        <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showOtpModal}
+        onRequestClose={() => setShowOtpModal(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <View
+              style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+            >
+              <Text style={styles.title}>Verify Signup OTP</Text>
+              <TouchableOpacity onPress={() => setShowOtpModal(false)}>
+                <Entypo size={SF(30)} color={''} name={'cross'} />
+              </TouchableOpacity>
+            </View>
+            <OTPInput
+              length={6}
+        onSubmit={async(otp)=>{
+             console.log(phone,"phone", otp,"opt")
+
+      try {
+ 
+    const result = await dispatch(
+    VerifyUpdatePhoneNumber({ new_phone_number:phone, otp:otp })
+    );
+    if (verifyOtp1.fulfilled.match(result)) {
+      console.log("Success:", result.payload);
+      Alert.alert(
+        "Success",
+        result.payload.message || "OTP Verified",
+        [
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.navigate("CreatePassword", { phone }),
+          },
+        ]
+      );
+    } else {
+      console.log("Error:", result.payload);
+      Alert.alert(
+        "Error",
+        result.payload?.message || "OTP verification failed"
+      );
+    }
+  } finally {
+
+  }
+}}
+
+
+              onResend={() => {
+                console.log('🔄 Resend clicked');
+                dispatch(
+                  reSendOtp({
+                    phone_number: phone,
+                  }),
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </ContainerComponent>
   );
 };
@@ -401,5 +447,17 @@ const styles = StyleSheet.create({
     color: 'red',
     marginTop: 4,
     fontSize: 12,
+  },
+    modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
   },
 });

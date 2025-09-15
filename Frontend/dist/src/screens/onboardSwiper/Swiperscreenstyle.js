@@ -146,6 +146,14 @@ const SwiperStyles = () => StyleSheet.create({
     position: 'relative',
     bottom: SH(50)
   },
+    actionButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SH(20),
+    borderRadius: SW(8),
+    marginTop: SH(5),
+  },
 });
 
 export default SwiperStyles

@@ -1,3 +1,4 @@
+import { verifyOtp1 } from './authReducer';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import { endpoints } from '../../utils/config/config';
@@ -99,8 +100,6 @@ formData.append("first_name", first_name);
 formData.append("email", email);
 formData.append("phone_number", phone_number);
 formData.append("student_class",student_class);
-//formData.append("profile_image",profile_image);
-//formData.append("profile_image", profile_image);
 
 if (profile_image && profile_image.startsWith("file")) {
   formData.append("profile_image", {
@@ -109,22 +108,6 @@ if (profile_image && profile_image.startsWith("file")) {
     name: "profile.jpg",
   } as any);
 }
-    //  if (!profile_image?.startsWith('http://') && profile_image) {
-    //   formData.append('photo', {
-    //     uri: profile_image,
-    //     name: 'test.jpg',
-    //     type: 'image/jpeg'
-    //   })
-    // }
-     
-
-//      if (profile_image && profile_image.startsWith("file")) {
-//     formData.append("profile_image", {
-//     uri: profile_image,
-//     type: "image/jpeg",
-//     name: "profile.jpg"
-//   } as any);
-// }
     const data = {
       email,
       first_name,
@@ -142,7 +125,6 @@ if (profile_image && profile_image.startsWith("file")) {
           Authorization: `Bearer ${token}`,
         },
       });
-console.log(response,"===================response===================")
       return fulfillWithValue(response.data);
     } catch (error: any) {
       console.log(
@@ -195,6 +177,99 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+export const VerifyUpdatePhoneNumber = createAsyncThunk(
+  'VerifyUpdatePhoneNumber',
+  async (
+    {
+      student_id,
+      class_id,
+      new_phone_number,
+      otp
+    }: {
+        student_id: number;
+      class_id: number;
+      new_phone_number: string;
+      otp:string | number
+     
+    },
+    {getState, fulfillWithValue, rejectWithValue },
+  ) => {
+    try {
+      const state: any = getState();
+      const storedToken = await AsyncStorage.getItem('access_token')
+      const rawToken = state.auth?.token || storedToken
+      const token = rawToken?.replace(/^['"]+|['"]+$/g, "")  
+
+    const data = {
+    new_phone_number,
+    otp
+    };
+      const url = `${endpoints.STUDENT_PROFILE}/${student_id}/${class_id}/`;
+      const response = await api.post(url, data, {
+        headers: {
+    "Content-Type": "multipart/form-data",
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return fulfillWithValue(response.data);
+    } catch (error: any) {
+      console.log(
+        'Update Profile API Error:',
+        error.response?.data || error.message,
+      );
+      return rejectWithValue(
+        error.response?.data || { message: 'Profile update failed' },
+      );
+    }
+  },
+); 
+
+export const SendOtpUpdatePhoneNumber = createAsyncThunk(
+  'SendOtpUpdatePhoneNumber',
+  async (
+    {
+      student_id,
+      class_id,
+      new_phone_number,
+    }: {
+      student_id: number;
+      class_id: number;
+      new_phone_number: string;     
+    },
+    {getState, fulfillWithValue, rejectWithValue },
+  ) => {
+    try {
+      const state: any = getState();
+      const storedToken = await AsyncStorage.getItem('access_token')
+      const rawToken = state.auth?.token || storedToken
+      const token = rawToken?.replace(/^['"]+|['"]+$/g, "")  
+
+    const data = {
+    new_phone_number,
+    };
+      const url = `${endpoints.STUDENT_PROFILE}/${student_id}/${class_id}/`;
+      const response = await api.put(url, data, {
+        headers: {
+   // "Content-Type": "multipart/form-data",
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return fulfillWithValue(response.data);
+    } catch (error: any) {
+      console.log(
+        'Update Profile API Error:',
+        error.response?.data || error.message,
+      );
+      return rejectWithValue(
+        error.response?.data || { message: 'Profile update failed' },
+      );
+    }
+  },
+); 
+
+
 export const ProfilSlice = createSlice({
   name: 'ProfilSlice',
   initialState,
@@ -208,8 +283,6 @@ export const ProfilSlice = createSlice({
     builder.addCase(getProfile.fulfilled, (state, action) => {
       state.loading = false;
       state.getProfileData = action.payload?.data;
-     // console.log(state.getProfileData,"==============getclass=============")
-      // state.message = action.payload.message;
       state.message = 'Profile fetched successfully';
     });
     builder.addCase(getProfile.rejected, (state, action: any) => {
@@ -224,8 +297,6 @@ export const ProfilSlice = createSlice({
 
     builder.addCase(updateProfile.fulfilled, (state, action) => {
       state.loading = false;
-      // backend message OR fallback success
-      console.log(action.payload.data,"updateddata===========")
       state.message =
         action.payload?.message || 'Profile updated successfully';
     });
@@ -234,21 +305,47 @@ export const ProfilSlice = createSlice({
       state.loading = false;
       state.message = 'Profile update failed';
     });
-     builder
-    .addCase(changePassword.pending, (state) => {
+     builder.addCase(changePassword.pending, (state) => {
       state.loading = true;
       state.error = null;
       state.message = null;
     })
-    .addCase(changePassword.fulfilled, (state, action) => {
+     builder.addCase(changePassword.fulfilled, (state, action) => {
       state.loading = false;
       state.message = action.payload.message; // from backend
     })
-    .addCase(changePassword.rejected, (state, action) => {
+     builder.addCase(changePassword.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload?.message || "Failed to update password";
+      //state.error = action.payload?.message || "Failed to update password";
     });
-  },
+       builder.addCase(VerifyUpdatePhoneNumber.pending, state => {
+          state.loading = true;
+        });
+        builder.addCase(VerifyUpdatePhoneNumber.fulfilled, (state, action) => {
+          state.loading = false;
+           state.message = action.payload as string;
+        });
+    builder.addCase(VerifyUpdatePhoneNumber.rejected, (state, action) => {
+      console.log("rejected payload:", action.payload);
+      state.loading = false;
+      state.message =
+        (action.payload as any)?.message ||
+        action.error?.message ||
+        "OTP verification failed";
+  });
+  builder.addCase(SendOtpUpdatePhoneNumber.pending, state => {
+        state.loading = true;
+      });
+      builder.addCase(SendOtpUpdatePhoneNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message;
+        state.statusCode = action.payload.statusCode;
+      });
+      builder.addCase(SendOtpUpdatePhoneNumber.rejected, (state, action) => {
+        state.loading = false;
+        state.message = action.payload as string;
+      });
+}
 });
 
 export const {} = ProfilSlice.actions;

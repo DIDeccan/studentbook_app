@@ -40,7 +40,7 @@ const Navigations = () => {
         component={BottomTabNavigations}
       />
       <Stack.Screen name="ContentSection" component={ContentSection} />
-      <Stack.Screen name="MathSubject" component={MathSubject} />
+      <Stack.Screen name="MathsSubject" component={MathSubject} />
       <Stack.Screen name="EnglishSubject" component={EnglishSubject} />
       <Stack.Screen name="TeluguSubject" component={TeluguSubject} />
       <Stack.Screen

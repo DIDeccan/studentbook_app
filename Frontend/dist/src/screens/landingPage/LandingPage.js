@@ -6,7 +6,8 @@ import {
   Image,
   ScrollView,
   FlatList,
-  ImageBackground,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import React, { useEffect, useState, useRef } from 'react';
 import { loginImg, userProfile } from '../../images';
@@ -18,6 +19,7 @@ import { darkColors, lightColors } from '../../utils/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getDemoData } from '../../redux/reducer/demopagereduce';
+import LinearGradient from 'react-native-linear-gradient';
 
 const ClassData = [
   {
@@ -87,6 +89,7 @@ const LandingPage = ({ navigation }) => {
   const styles = themedStyles(colors);
   const dispatch = useDispatch();
   const DemoData = useSelector(state => state.demoData.getDemoVideosData);
+  const [fullScreenVideo, setFullScreenVideo] = useState(null);
 
   const GotoLogin = () => {
     navigation.navigate('LoginScreen');
@@ -103,70 +106,58 @@ const LandingPage = ({ navigation }) => {
     const [expanded, setExpanded] = useState(false);
     const [paused, setPaused] = useState(true);
     const [progress, setProgress] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [videoSize, setVideoSize] = useState('medium'); // small, medium, large
     const videoRef = useRef(null);
 
     const onProgress = (data) => {
       setProgress(data.currentTime / data.seekableDuration);
     };
 
-    const onLoad = (data) => {
-      setDuration(data.duration);
-    };
-
     const togglePlayPause = () => {
       setPaused(!paused);
     };
 
-    const toggleVideoSize = () => {
-      const sizes = ['small', 'medium', 'large'];
-      const currentIndex = sizes.indexOf(videoSize);
-      const nextIndex = (currentIndex + 1) % sizes.length;
-      setVideoSize(sizes[nextIndex]);
-    };
-
-    const getVideoHeight = () => {
-      switch(videoSize) {
-        case 'small': return 150;
-        case 'medium': return 200;
-        case 'large': return 250;
-        default: return 200;
-      }
+    const openFullScreen = () => {
+      setFullScreenVideo(item);
     };
 
     return (
       <View style={styles.card}>
         <View style={styles.videoContainer}>
-          <Video
-            ref={videoRef}
-            source={{ uri: item.vedio_url }}
-            style={[styles.video, { height: getVideoHeight() }]}
-            resizeMode="cover"
-            volume={1.0}
-            paused={paused}
-            onProgress={onProgress}
-            onLoad={onLoad}
-          />
           <TouchableOpacity 
-            style={styles.playButton}
-            onPress={togglePlayPause}
+            activeOpacity={0.9}
+            onPress={openFullScreen}
           >
-            <Ionicons 
-              name={paused ? 'play' : 'pause'} 
-              size={24} 
-              color="white" 
+            <Video
+              ref={videoRef}
+              source={{ uri: item.vedio_url }}
+              style={styles.video}
+              resizeMode="cover"
+              volume={1.0}
+              paused={paused}
+              onProgress={onProgress}
             />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.sizeButton}
-            onPress={toggleVideoSize}
-          >
-            <Ionicons 
-              name={videoSize === 'large' ? 'contract' : 'expand'} 
-              size={20} 
-              color="white" 
-            />
+            <View style={styles.videoOverlay}>
+              <TouchableOpacity 
+                style={styles.playButton}
+                onPress={togglePlayPause}
+              >
+                <Ionicons 
+                  name={paused ? 'play-circle' : 'pause-circle'} 
+                  size={48} 
+                  color="rgba(255,255,255,0.8)" 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.fullscreenButton}
+                onPress={openFullScreen}
+              >
+                <Ionicons 
+                  name="expand" 
+                  size={24} 
+                  color="white" 
+                />
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
         </View>
         
@@ -206,88 +197,130 @@ const LandingPage = ({ navigation }) => {
           style={styles.subscribeBtn}
           onPress={GotoSignUp}
         >
-          <Text style={styles.subscribeText}>Subscribe</Text>
+          <LinearGradient
+            colors={['rgba(254,238,245,1)', 'rgba(223,238,255,1)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientButton}
+          >
+            <Text style={styles.subscribeText}>Subscribe Now</Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.primary} style={{ marginLeft: 5 }} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
   };
 
-  return (
-    <ContainerComponent>
-      <View style={{ flex: 1 }}>
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingVertical: SH(15),
-            alignItems: 'center',
-            paddingHorizontal: SW(14),
-          }}
-        >
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
+  const FullScreenVideo = () => {
+    const [paused, setPaused] = useState(false);
+    const videoRef = useRef(null);
+
+    const togglePlayPause = () => {
+      setPaused(!paused);
+    };
+
+    return (
+      <Modal
+        visible={fullScreenVideo !== null}
+        supportedOrientations={['portrait', 'landscape']}
+        animationType="fade"
+      >
+        <View style={styles.fullScreenContainer}>
+          <Video
+            ref={videoRef}
+            source={{ uri: fullScreenVideo?.vedio_url }}
+            style={styles.fullScreenVideo}
+            resizeMode="contain"
+            volume={1.0}
+            paused={paused}
+            controls={false}
+          />
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => setFullScreenVideo(null)}
           >
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.fullScreenPlayButton}
+            onPress={togglePlayPause}
+          >
+            <Ionicons 
+              name={paused ? 'play-circle' : 'pause-circle'} 
+              size={64} 
+              color="rgba(255,255,255,0.8)" 
+            />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    );
+  };
+
+  return (
+   <ContainerComponent>
+        <View style={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
             <Image
               source={loginImg}
               resizeMode="cover"
-              style={{ height: 40, width: 40, borderRadius: 40 }}
+              style={styles.logo}
             />
-            <Text style={{ fontSize: 17, marginLeft: 5 }}>Student Book</Text>
+            <Text style={styles.logoText}>Student Book</Text>
           </View>
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-            }}
-          >
+          <View style={styles.authButtons}>
             <TouchableOpacity
-              style={{
-                backgroundColor: colors.primary,
-                borderRadius: 8,
-                marginHorizontal: 15,
-              }}
+              style={styles.signUpButton}
+              onPress={GotoSignUp}
             >
-              <Text style={styles.LoginText} onPress={GotoSignUp}>
-                SignUp
-              </Text>
+              <Text style={styles.signUpText}>SignUp</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{ backgroundColor: colors.primary, borderRadius: 8 }}
+              style={styles.loginButton}
+              onPress={GotoLogin}
             >
-              <Text style={styles.LoginText} onPress={GotoLogin}>
-                Login
-              </Text>
+              <Text style={styles.loginText}>Login</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView
-          contentContainerStyle={{
-            paddingBottom: SH(10),
-          }}
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <View>
-            {/* Hero Section */}
-            <View style={styles.hero}>
-              <Image
-                source={{
-                  uri: 'https://img.freepik.com/free-vector/online-learning-concept_23-2148504542.jpg',
-                }}
-                style={styles.heroImg}
-              />
+          {/* Hero Section */}
+          <View style={styles.hero}>
+            <Image
+              source={{
+                uri: 'https://img.freepik.com/free-vector/online-learning-concept_23-2148504542.jpg',
+              }}
+              style={styles.heroImg}
+            />
+            <View style={styles.heroContent}>
               <Text style={styles.heroTitle}>Welcome to Student Book</Text>
               <Text style={styles.heroSubtitle}>
                 Learn smarter, grow faster. Start your journey today.
               </Text>
+              <TouchableOpacity
+                style={styles.getStartedButton}
+                onPress={GotoSignUp}
+              >
+                <LinearGradient
+                  colors={['rgba(254,238,245,1)', 'rgba(223,238,255,1)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.gradientButton}
+                >
+                  <Text style={styles.getStartedText}>Get Started</Text>
+                  <Ionicons name="arrow-forward" size={20} color={colors.primary} style={{ marginLeft: 5 }} />
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
-            
+          </View>
+          
+          {/* Classes Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Demo Videos</Text>
             <FlatList
               data={ClassData}
               keyExtractor={item => item.id.toString()}
@@ -295,24 +328,47 @@ const LandingPage = ({ navigation }) => {
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => <ClassCard item={item} />}
             />
-            
-            {/* Why Choose Us Section */}
-            <View style={styles.featureSection}>
-              <Text style={styles.sectionTitle}>Why Choose Us?</Text>
-              <View style={styles.featureList}>
-                {features.map(f => (
-                  <View key={f.id} style={styles.featureCard}>
+          </View>
+          
+          {/* Why Choose Us Section */}
+          <View style={styles.featureSection}>
+            <Text style={styles.sectionTitle}>Why Choose Us?</Text>
+            <View style={styles.featureList}>
+              {features.map(f => (
+                <View key={f.id} style={styles.featureCard}>
+                  <View style={styles.featureIconContainer}>
                     <Ionicons name={f.icon} size={28} color="#007bff" />
-                    <Text style={styles.featureTitle}>{f.title}</Text>
-                    <Text style={styles.featureDesc}>{f.desc}</Text>
                   </View>
-                ))}
-              </View>
+                  <Text style={styles.featureTitle}>{f.title}</Text>
+                  <Text style={styles.featureDesc}>{f.desc}</Text>
+                </View>
+              ))}
             </View>
+          </View>
+
+          {/* Call to Action */}
+          <View style={styles.ctaSection}>
+            <LinearGradient
+              colors={['rgba(254,238,245,0.8)', 'rgba(223,238,255,0.8)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaGradient}
+            >
+              <Text style={styles.ctaTitle}>Ready to start learning?</Text>
+              <Text style={styles.ctaSubtitle}>Join thousands of students achieving their goals</Text>
+              <TouchableOpacity
+                style={styles.ctaButton}
+                onPress={GotoSignUp}
+              >
+                <Text style={styles.ctaButtonText}>Sign Up Now</Text>
+              </TouchableOpacity>
+            </LinearGradient>
           </View>
         </ScrollView>
       </View>
-    </ContainerComponent>
+      {fullScreenVideo && <FullScreenVideo />}
+   </ContainerComponent>
+  
   );
 };
 
@@ -320,54 +376,158 @@ export default LandingPage;
 
 const themedStyles = colors =>
   StyleSheet.create({
-    backgroundVideo: {
-      height: SH(220),
-      width: '100%',
-      backgroundColor: '#000',
-      overflow: 'hidden',
+    container: {
+      flex: 1,
     },
-    LoginText: {
-      padding: 8,
-      fontSize: 17,
-      color: 'white',
+    content: {
+      flex: 1,
     },
-    subscribeText: {
-      color: 'white',
-      padding: SH(10),
-      textAlign: 'center',
-      fontSize: SF(16),
+    scrollContainer: {
+      paddingBottom: SH(10),
     },
-    subscribeBtn: {
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: SH(15),
+      alignItems: 'center',
+      paddingHorizontal: SW(20),
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(255,255,255,0.2)',
+    },
+    logoContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    logo: {
+      height: 40,
+      width: 40,
+      borderRadius: 40,
+    },
+    logoText: {
+      fontSize: 18,
+      marginLeft: 10,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    authButtons: {
+      flexDirection: 'row',
+    },
+    signUpButton: {
+      backgroundColor: 'transparent',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      marginRight: 10,
+    },
+    signUpText: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      fontSize: 14,
+      color: colors.primary,
+    },
+    loginButton: {
       backgroundColor: colors.primary,
-      width: SW(200),
-      borderRadius: SH(10),
-      marginTop: SH(4),
-      alignSelf: 'center',
+      borderRadius: 20,
     },
-    nameStyle: {
-      fontSize: SF(16),
-      marginTop: SH(5),
+    loginText: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      fontSize: 14,
+      color: 'white',
+    },
+    hero: {
+      alignItems: 'center', 
+      padding: 20,
+    },
+    heroImg: { 
+      width: '100%', 
+      height: 200, 
+      borderRadius: 12, 
+      marginBottom: 16,
+    },
+    heroContent: {
+      alignItems: 'center',
+    },
+    heroTitle: { 
+      fontSize: 24, 
+      fontWeight: '700', 
+      color: colors.text, 
       textAlign: 'center',
+      marginBottom: 8,
+    },
+    heroSubtitle: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    getStartedButton: {
+      width: '60%',
+    },
+    gradientButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
+      borderRadius: 25,
+     
+    },
+    getStartedText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+     
+    },
+    section: {
+      padding: 16,
+    },
+    sectionTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 16,
+      paddingLeft: 8,
+    },
+    // Class Card
+    card: {
+     backgroundColor: colors.background,
+      padding: 16,
+      marginBottom: 20,
+      borderRadius: 16,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 3.84,
+      elevation: 5,
     },
     videoContainer: {
       position: 'relative',
+      borderRadius: 12,
+      overflow: 'hidden',
     },
     video: {
       width: '100%',
-      borderRadius: 10,
+      height: 200,
       backgroundColor: '#000',
     },
-    playButton: {
+    videoOverlay: {
       position: 'absolute',
-      top: '50%',
-      left: '50%',
-      marginLeft: -20,
-      marginTop: -20,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      borderRadius: 25,
-      padding: 8,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.2)',
     },
-    sizeButton: {
+    playButton: {
+      padding: 10,
+    },
+    fullscreenButton: {
       position: 'absolute',
       bottom: 10,
       right: 10,
@@ -386,55 +546,138 @@ const themedStyles = colors =>
     },
     progressFill: {
       height: '100%',
-      backgroundColor: 'red',
+      backgroundColor: colors.primary,
     },
-    hero: { alignItems: 'center', padding: 16 },
-    heroImg: { width: '100%', height: 180, borderRadius: 12, marginBottom: 12 },
-    heroTitle: { fontSize: 22, fontWeight: '700', color: '#222' },
-    heroSubtitle: {
+    title: { 
+      fontSize: 18, 
+      fontWeight: '700', 
+      color: colors.text,
+    },
+    cost: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    description: { 
+      fontSize: 14, 
+      color: colors.textSecondary, 
+      marginTop: 8,
+      lineHeight: 20,
+    },
+    seeMore: { 
+      marginTop: 8, 
+      color: colors.primary, 
+      fontWeight: '600',
       fontSize: 14,
-      color: '#555',
-      textAlign: 'center',
-      marginTop: 4,
+    },
+    subscribeBtn: {
+      marginTop: 16,
+      borderRadius: 25,
+      overflow: 'hidden',
+    },
+    subscribeText: {
+      color: colors.primary,
+      fontWeight: '600',
+      fontSize: 16,
     },
     // Features
-    featureSection: { padding: 16 },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: '#222',
-      marginBottom: 12,
+    featureSection: { 
+      padding: 20,
+    //  backgroundColor:colors.background
     },
-    featureList: { flexDirection: 'row', justifyContent: 'space-between' },
+    featureList: { 
+      flexDirection: 'row', 
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+    },
     featureCard: {
-      flex: 1,
+      width: '30%',
       alignItems: 'center',
-      padding: 8,
-      marginHorizontal: 4,
-    },
-    featureTitle: { fontSize: 14, fontWeight: '600', marginTop: 4 },
-    featureDesc: {
-      fontSize: 12,
-      color: '#555',
-      textAlign: 'center',
-      marginTop: 2,
-    },
-    // Class Card
-    card: {
-      backgroundColor: '#fff',
-      padding: 16,
-      marginBottom: 16,
-      marginHorizontal: 12,
+      padding: 12,
+      backgroundColor: colors.background,
       borderRadius: 12,
+      marginBottom: 10,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 2.22,
       elevation: 3,
     },
-    title: { fontSize: 18, fontWeight: '700', color: '#222' },
-    cost: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#007bff',
+    featureIconContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: 'rgba(0,123,255,0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
       marginBottom: 8,
     },
-    description: { fontSize: 14, color: '#555', marginTop: 8 },
-    seeMore: { marginTop: 4, color: '#007bff', fontWeight: '600' },
+    featureTitle: { 
+      fontSize: 14, 
+      fontWeight: '600', 
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    featureDesc: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    // CTA Section
+    ctaSection: {
+      padding: 20,
+    },
+    ctaGradient: {
+      padding: 24,
+      borderRadius: 16,
+      alignItems: 'center',
+    },
+    ctaTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 8,
+    },
+    ctaSubtitle: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    ctaButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 25,
+    },
+    ctaButtonText: {
+      color: 'white',
+      fontWeight: '600',
+      fontSize: 16,
+    },
+    // Full Screen Video
+    fullScreenContainer: {
+      flex: 1,
+      backgroundColor: 'black',
+      justifyContent: 'center',
+    },
+    fullScreenVideo: {
+      width: '100%',
+      height: '100%',
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 40,
+      right: 20,
+      zIndex: 10,
+    },
+    fullScreenPlayButton: {
+      position: 'absolute',
+      alignSelf: 'center',
+      zIndex: 10,
+    },
   });

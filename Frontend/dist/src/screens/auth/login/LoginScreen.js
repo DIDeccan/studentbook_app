@@ -19,7 +19,7 @@ import { checkEmailValidation } from '../../../utils/utils';
 import Input from '../../../components/commonComponents/Input';
 import { SF, SH, SW } from '../../../utils/dimensions';
 import Fonts from '../../../utils/Fonts';
-import { loginImg, userProfile } from '../../../images';
+import { loginImg, Spalsh_Logo1, userProfile } from '../../../images';
 import ContainerComponent from '../../../components/commonComponents/Container';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginAction } from '../../../redux/reducer/authReducer';
@@ -59,12 +59,17 @@ const LoginScreen = props => {
         console.log('Login success:', login);
      await AsyncStorage.setItem("access_token", login.access);
 await AsyncStorage.setItem("refresh_token", login.refresh);
+await AsyncStorage.setItem("studentId"   ,String(login?.student_id))
+await AsyncStorage.setItem("classId",String(login?.class_id))
 //await AsyncStorage.setItem("refresh_token", login.refresh);
-
+  let stent =        await AsyncStorage.getItem("studentId")
+  const classId =    await AsyncStorage.getItem("classId")
 const acc = await AsyncStorage.getItem("access_token");
 const ref = await AsyncStorage.getItem("refresh_token");
 console.log("accc===", acc);
 console.log("ref===", ref);
+console.log("accc=11==", stent);
+console.log("ref22===", classId);
 
    Alert.alert("Success", login.message || "Login successful", [
   { text: "OK", onPress: () =>  props.navigation.replace('BottomTabNavigations')}
@@ -102,26 +107,11 @@ console.log("ref===", ref);
         <ScrollView>
           <View style={[styles.mainView]}>
             <StatusBar backgroundColor={'white'} barStyle={'dark-content'} />
-            <Image source={loginImg} style={styles.loginImage} />
+            <Image source={Spalsh_Logo1} style={styles.loginImage} />
             <Text style={styles.title}>{translate('textWelcomeBack')}</Text>
             <Text style={styles.subTitleTxt}>
               {translate('textPleaseEnterDetails')}
             </Text>
-            {/* <Input
-              keyboardType="email-address"
-              title={translate('textEmail')}
-              placeholder={translate('textForEmailForPlaceholder')}
-              value={username}
-              onChangeHandler={e => setUsername(e)}
-              textInputProps={{
-                style: styles.inputStyle,
-              }}
-            />
-            {!checkEmailValidation(username) && emailerror ? (
-              <View style={{}}>
-                <Text style={styles.ErrorMsg}>{translate('validEmail')}</Text>
-              </View>
-            ) : null} */}
             <Input
                 placeholderTextColor={''}
                 title={translate('textPhone')}
@@ -222,7 +212,7 @@ const themedStyles =(colors)=> StyleSheet.create({
   subTitleTxt: {
     fontSize: SF(16),
     fontFamily: Fonts.Medium,
-    marginBottom: SH(20),
+    marginBottom: SH(10),
     textAlign: 'center',
   },
   title: {
@@ -247,9 +237,9 @@ const themedStyles =(colors)=> StyleSheet.create({
     marginRight: 10,
   },
   loginImage: {
-    height: SH(100),
-    width: SW(100),
-    marginTop: SH(15),
+    height: SH(140),
+    width: SW(140),
+    //marginTop: SH(15),
     marginBottom: SH(10),
     alignSelf: 'center',
     resizeMode: 'stretch',
@@ -257,7 +247,7 @@ const themedStyles =(colors)=> StyleSheet.create({
   },
   mainView: {
     height: SH(700),
-    padding: SW(15),
+    padding: SW(17),
     justifyContent: 'center',
   },
   row: {

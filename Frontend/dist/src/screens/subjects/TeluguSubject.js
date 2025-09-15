@@ -6,344 +6,281 @@ import {
   Image,
   StyleSheet,
   ScrollView,
-  Animated,
   Dimensions,
-  AsyncStorage // or @react-native-async-storage/async-storage
+  SafeAreaView,
+  StatusBar,
+  Platform
 } from 'react-native';
 import Video from 'react-native-video';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { SH, SW } from '../../utils/dimensions';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Slider from '@react-native-community/slider';
 import ContainerComponent from '../../components/commonComponents/Container';
 
 const { width, height } = Dimensions.get('window');
 
-// Key for storing the last watched video
-const LAST_WATCHED_VIDEO_KEY = 'lastWatchedVideo';
-
-const TeluguSubject = () => {
-  const [activeUnitIndex, setActiveUnitIndex] = useState(null);
-  const [activeSubjectIndex, setActiveSubjectIndex] = useState(null);
+const CoursePlayerScreen = (props) => {
+  const [activeChapter, setActiveChapter] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [favorites, setFavorites] = useState({});
-  const [downloads, setDownloads] = useState({});
-  const [progress, setProgress] = useState(0);
+  const [videoProgress, setVideoProgress] = useState({});
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [expandedChapters, setExpandedChapters] = useState({});
+  
   const videoRef = useRef(null);
-  const animationValues = useRef(new Map()).current;
+  const controlsTimeout = useRef(null);
 
- const courseData = [
+  const courseData = [
     {
-      unitTitle: 'Unit 1: Introduction',
-      subjects: [
+      chapterTitle: 'Chapter 1: Introduction to Programming',
+      chapterNumber: 1,
+      videos: [
         {
-          subjectTitle: 'Subject 1: Basics of Programming',
-          videos: [
-            {
-              title: 'What is Programming?',
-              url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-            },
-            {
-              title: 'First Program',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-            },
-          ],
-          content:
-            'This subject introduces the basic concepts of programming languages.',
+          id: '1.1',
+          title: '1.1 What is Programming?',
+          description: 'Learn the basics of programming and why it is important in today\'s world.',
+          url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          duration: '10:25',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
         },
         {
-          subjectTitle: 'Subject 2: Tools Setup',
-          videos: [
-            {
-              title: 'Installing Tools',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-            },
-          ],
-          content: 'Learn how to install the necessary tools for development.',
+          id: '1.2',
+          title: '1.2 Programming Languages',
+          description: 'Explore different programming languages and their applications.',
+          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+          duration: '15:40',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
         },
-      ],
+        {
+          id: '1.3',
+          title: '1.3 Setting Up Your Environment',
+          description: 'Step-by-step guide to setting up your development environment.',
+          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          duration: '12:15',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+        },
+        {
+          id: '1.4',
+          title: '1.4 Your First Program',
+          description: 'Write and run your first program in this beginner-friendly tutorial.',
+          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+          duration: '18:30',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+        }
+      ]
     },
     {
-      unitTitle: 'Unit 2: JavaScript Fundamentals',
-      subjects: [
+      chapterTitle: 'Chapter 2: JavaScript Fundamentals',
+      chapterNumber: 2,
+      videos: [
         {
-          subjectTitle: 'Subject 1: Variables & Data Types',
-          videos: [
-            {
-              title: 'Understanding Variables',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-            },
-            {
-              title: 'Data Types in JS',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-            },
-          ],
-          content:
-            'Covers different types of variables and data types in JavaScript.',
+          id: '2.1',
+          title: '2.1 Variables and Data Types',
+          description: 'Learn how to declare variables and work with different data types in JavaScript.',
+          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+          duration: '14:20',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
         },
         {
-          subjectTitle: 'Subject 2: Operators',
-          videos: [
-            {
-              title: 'Arithmetic & Logical Operators',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-            },
-          ],
-          content: 'Explains how to use operators effectively in code.',
-        },
-      ],
+          id: '2.2',
+          title: '2.2 Operators and Expressions',
+          description: 'Understand how to use operators and build expressions in your code.',
+          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+          duration: '16:45',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+        }
+      ]
     },
     {
-      unitTitle: 'Unit 3: Control Flow',
-      subjects: [
+      chapterTitle: 'Chapter 3: Control Structures',
+      chapterNumber: 3,
+      videos: [
         {
-          subjectTitle: 'Subject 1: Conditional Statements',
-          videos: [
-            {
-              title: 'if/else Statements',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
-            },
-          ],
-          content:
-            'Learn to use if, else if, and else statements to control logic.',
+          id: '3.1',
+          title: '3.1 Conditional Statements',
+          description: 'Master if, else if, and switch statements to control program flow.',
+          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+          duration: '13:10',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
         },
         {
-          subjectTitle: 'Subject 2: Loops',
-          videos: [
-            {
-              title: 'For & While Loops',
-              url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-            },
-            {
-              title: 'Loop Practice',
-              url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-            },
-          ],
-          content: 'Understand and practice different types of loops in JS.',
-        },
-      ],
-    },
-    {
-      unitTitle: 'Unit 4: Functions & Scope',
-      subjects: [
-        {
-          subjectTitle: 'Subject 1: Functions',
-          videos: [
-            {
-              title: 'Function Basics',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-            },
-          ],
-          content:
-            'Covers function declaration, parameters, and return values.',
-        },
-        {
-          subjectTitle: 'Subject 2: Scope and Hoisting',
-          videos: [
-            {
-              title: 'Understanding Scope',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
-            },
-            {
-              title: 'Hoisting Explained',
-              url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-            },
-          ],
-          content: 'Explore local/global scope and the concept of hoisting.',
-        },
-      ],
-    },
+          id: '3.2',
+          title: '3.2 Loops and Iteration',
+          description: 'Learn how to use for, while, and do-while loops effectively.',
+          url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          duration: '17:25',
+          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+        }
+      ]
+    }
   ];
 
-  // Load last watched video on component mount
+  // Set the first video as default when component mounts
   useEffect(() => {
-    loadLastWatchedVideo();
+    if (courseData.length > 0 && courseData[0].videos.length > 0) {
+      const firstVideo = courseData[0].videos[0];
+      setSelectedVideo({
+        ...firstVideo,
+        chapterTitle: courseData[0].chapterTitle
+      });
+      
+      // Initialize expanded chapters - first chapter expanded by default
+      const initialExpanded = {};
+      courseData.forEach((_, index) => {
+        initialExpanded[index] = index === 0;
+      });
+      setExpandedChapters(initialExpanded);
+    }
   }, []);
 
-  // Save video progress when it changes
-  useEffect(() => {
-    if (selectedVideo) {
-      saveVideoProgress();
-    }
-  }, [selectedVideo, progress]);
+  // Hide controls after 3 seconds of inactivity
+  // useEffect(() => {
+  //   if (showControls && isPlaying) {
+  //     controlsTimeout.current = setTimeout(() => {
+  //       setShowControls(false);
+  //     }, 3000);
+  //   }
 
-  const loadLastWatchedVideo = async () => {
-    try {
-      const savedVideoData = await AsyncStorage.getItem(LAST_WATCHED_VIDEO_KEY);
-      if (savedVideoData) {
-        const { video, unitTitle, progress: savedProgress } = JSON.parse(savedVideoData);
-        
-        // Find the video in our course data
-        let foundVideo = null;
-        let foundUnitTitle = '';
-        
-        courseData.forEach(unit => {
-          unit.subjects.forEach(subject => {
-            subject.videos.forEach(v => {
-              if (v.url === video.url) {
-                foundVideo = v;
-                foundUnitTitle = unit.unitTitle;
-              }
-            });
-          });
-        });
-        
-        if (foundVideo) {
-          setSelectedVideo({ ...foundVideo, unitTitle: foundUnitTitle });
-          setProgress(savedProgress);
-        } else {
-          // If no saved video found, select the first video of the first lesson
-          selectFirstVideo();
-        }
-      } else {
-        // If no saved video, select the first video of the first lesson
-        selectFirstVideo();
-      }
-    } catch (error) {
-      console.error('Error loading last watched video:', error);
-      selectFirstVideo();
-    }
+  //   return () => {
+  //     if (controlsTimeout.current) {
+  //       clearTimeout(controlsTimeout.current);
+  //     }
+  //   };
+  // }, [showControls, isPlaying]);
+
+  const toggleFavorite = (id) => {
+    setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const selectFirstVideo = () => {
-    if (courseData.length > 0 && 
-        courseData[0].subjects.length > 0 && 
-        courseData[0].subjects[0].videos.length > 0) {
-      setSelectedVideo({ 
-        ...courseData[0].subjects[0].videos[0], 
-        unitTitle: courseData[0].unitTitle 
-      });
-    }
+  const handleVideoSelect = (video, chapterIndex) => {
+    setSelectedVideo({
+      ...video,
+      chapterTitle: courseData[chapterIndex].chapterTitle
+    });
+    setActiveChapter(chapterIndex);
+    setIsPlaying(true);
+   // setShowControls(true);
   };
 
-  const saveVideoProgress = async () => {
-    try {
-      const videoData = {
-        video: selectedVideo,
-        unitTitle: selectedVideo.unitTitle,
-        progress: progress
-      };
-      await AsyncStorage.setItem(LAST_WATCHED_VIDEO_KEY, JSON.stringify(videoData));
-    } catch (error) {
-      console.error('Error saving video progress:', error);
-    }
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+    //setShowControls(true);
   };
 
-  const handleUnitPress = (unitIdx) => {
-    // Initialize animation value if not exists
-    if (!animationValues.has(unitIdx)) {
-      animationValues.set(unitIdx, new Animated.Value(0));
-    }
+  const toggleFullScreen = () => {
+   setIsFullScreen(!isFullScreen);
+   // setShowControls(true);
     
-    const willExpand = unitIdx !== activeUnitIndex;
-    setActiveUnitIndex(willExpand ? unitIdx : null);
-    setActiveSubjectIndex(null);
-    
-    // Animate the expansion/collapse
-    Animated.timing(animationValues.get(unitIdx), {
-      toValue: willExpand ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false // Fixed: useNativeDriver set to false for layout animations
-    }).start();
-  };
-
-  const handleSubjectPress = (subjectIdx) => {
-    // Initialize animation value if not exists
-    if (!animationValues.has(`subject-${subjectIdx}`)) {
-      animationValues.set(`subject-${subjectIdx}`, new Animated.Value(0));
+    if (Platform.OS === 'android') {
+      StatusBar.setHidden(!isFullScreen);
     }
-    
-    const willExpand = subjectIdx !== activeSubjectIndex;
-    setActiveSubjectIndex(willExpand ? subjectIdx : null);
-    
-    // Animate the expansion/collapse
-    Animated.timing(animationValues.get(`subject-${subjectIdx}`), {
-      toValue: willExpand ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false // Fixed: useNativeDriver set to false
-    }).start();
   };
 
-  const toggleFavorite = (url) => {
-    setFavorites((prev) => ({ ...prev, [url]: !prev[url] }));
-  };
-
-  const toggleDownload = (url) => {
-    setDownloads((prev) => ({ ...prev, [url]: !prev[url] }));
-    
-    // Show a brief animation when downloading (with useNativeDriver: true)
-    const downloadAnim = new Animated.Value(0);
-    Animated.sequence([
-      Animated.timing(downloadAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true // This is okay as it's a separate animation
-      }),
-      Animated.timing(downloadAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true
-      })
-    ]).start();
+  const toggleChapter = (chapterIndex) => {
+    setExpandedChapters(prev => ({
+      ...prev,
+      [chapterIndex]: !prev[chapterIndex]
+    }));
   };
 
   const onProgress = (data) => {
-    setProgress(data.currentTime / data.seekableDuration);
-  };
-
-  const onVideoLoad = (data) => {
-    if (progress > 0 && videoRef.current) {
-      videoRef.current.seek(data.duration * progress);
+    setCurrentTime(data.currentTime);
+    setDuration(data.seekableDuration);
+    
+    // Save progress
+    if (selectedVideo) {
+      const progress = data.currentTime / data.seekableDuration;
+      setVideoProgress(prev => ({
+        ...prev,
+        [selectedVideo.id]: progress
+      }));
     }
   };
 
-  const renderVideoCard = (video, unitTitle) => {
-    const isSelected = selectedVideo?.url === video.url;
+  const onSlidingStart = () => {
+    setIsPlaying(false);
+   // setShowControls(true);
+  };
+
+  const onSlidingComplete = (value) => {
+    if (videoRef.current) {
+      videoRef.current.seek(value * duration);
+    }
+    setIsPlaying(true);
+  //  setShowControls(true);
+  };
+
+  const formatTime = (seconds) => {
+    if (isNaN(seconds)) return '0:00';
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const getProgressForVideo = (videoId) => {
+    return videoProgress[videoId] || 0;
+  };
+
+  const renderVideoItem = (video, chapterIndex, isSelected) => {
+    const progress = getProgressForVideo(video.id);
+    
     return (
       <TouchableOpacity
-        key={video.url}
-        style={[styles.videoCard, isSelected && styles.videoCardSelected]}
-        onPress={() => setSelectedVideo({ ...video, unitTitle })}
+        key={video.id}
+        style={[styles.videoItem, isSelected && styles.selectedVideoItem]}
+        onPress={() => handleVideoSelect(video, chapterIndex)}
       >
-        <View style={styles.thumbnailContainer}>
-          <Image
-            source={{ uri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRCmgkix4DEJoToCFKP-g8ztCYa9bIuxAC3pA&s' }}
-            style={styles.thumbnail}
-          />
-          <View style={styles.playIconContainer}>
-            <MaterialIcons name="play-circle-filled" size={40} color="rgba(255,255,255,0.8)" />
+        <View style={styles.videoThumbnailContainer}>
+          <Image source={{ uri: video.thumbnail }} style={styles.videoThumbnail} />
+          <View style={styles.playIconOverlay}>
+            {isSelected && isPlaying?  <Ionicons name="pause" size={36} color="white" />: <Ionicons name="play-circle" size={36} color="white" />}
+           
           </View>
           <View style={styles.durationBadge}>
-            <Text style={styles.durationText}>10:25</Text>
+            <Text style={styles.durationText}>{video.duration}</Text>
           </View>
-          {isSelected && progress > 0 && (
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
+          
+          {/* Progress bar for watched videos */}
+          {progress > 0 && (
+            <View style={styles.thumbnailProgressContainer}>
+              <View 
+                style={[
+                  styles.thumbnailProgress, 
+                  { width: `${progress * 100}%` }
+                ]} 
+              />
             </View>
           )}
         </View>
-        <View style={styles.cardContent}>
+        
+        <View style={styles.videoInfo}>
           <Text style={styles.videoTitle}>{video.title}</Text>
-          <View style={styles.icons}>
+          <Text style={styles.videoDescription} numberOfLines={2}>
+            {video.description}
+          </Text>
+          
+          <View style={styles.videoActions}>
             <TouchableOpacity 
-              onPress={() => toggleFavorite(video.url)}
-              style={styles.iconButton}
+              onPress={() => toggleFavorite(video.id)}
+              style={styles.favButton}
             >
               <FontAwesome
-                name={favorites[video.url] ? 'heart' : 'heart-o'}
+                name={favorites[video.id] ? 'heart' : 'heart-o'}
                 size={20}
-                color={favorites[video.url] ? '#E91E63' : '#666'}
+                color={favorites[video.id] ? '#E91E63' : '#666'}
               />
             </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => toggleDownload(video.url)}
-              style={styles.iconButton}
-            >
-              <FontAwesome
-                name="download"
-                size={20}
-                color={downloads[video.url] ? '#4CAF50' : '#666'}
-              />
-            </TouchableOpacity>
+            
+            <View style={styles.chapterTag}>
+              <Text style={styles.chapterTagText}>
+                Chapter {courseData[chapterIndex].chapterNumber}
+              </Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -352,239 +289,364 @@ const TeluguSubject = () => {
 
   return (
     <ContainerComponent>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.container, isFullScreen && styles.fullScreenContainer]}>
+      {/* Header - Hide in fullscreen mode */}
+      {!isFullScreen && (
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={()=>{props.navigation.goBack()}}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Programming Course</Text>
+          <View style={styles.placeholder} />
+        </View>
+      )}
+
+      <View style={[styles.content, isFullScreen && styles.fullScreenContent]}>
+        {/* Video Player Section */}
         {selectedVideo && (
-          <View style={styles.videoContainer}>
-            <Text style={styles.nowPlaying}>Now Playing: {selectedVideo.title}</Text>
+          <TouchableOpacity 
+            style={[styles.videoSection1, isFullScreen && styles.fullScreenVideoSection]}
+            activeOpacity={1}
+            //onPress={() => setShowControls(!showControls)}
+          >
+            <View style={styles.videoSection}>
             <Video
               ref={videoRef}
               source={{ uri: selectedVideo.url }}
-              style={styles.videoPlayer}
-              controls
-              resizeMode="contain"
+              style={[
+                styles.videoPlayer,
+                isFullScreen && styles.fullScreenVideoPlayer
+              ]}
+              paused={!isPlaying}
               onProgress={onProgress}
-              onLoad={onVideoLoad}
-              paused={false}
-            />
-            {progress > 0 && (
-              <Text style={styles.resumeText}>Resuming from previous position</Text>
-            )}
-          </View>
-        )}
-        
-        <ScrollView 
-          showsVerticalScrollIndicator={false}
-          style={styles.scrollView}
-        >
-          <Text style={styles.courseTitle}>Programming Course</Text>
-          <Text style={styles.courseSubtitle}>Learn programming from basics to advanced</Text>
-          
-          {courseData.map((unit, unitIdx) => (
-            <View key={unit.unitTitle} style={styles.unitBlock}>
+              onLoad={(data) => setDuration(data?.duration)}
+              resizeMode="contain"
+            />  
+            {/* Play/Pause button in the center */}
+            {/* {!showControls && (
               <TouchableOpacity 
-                onPress={() => handleUnitPress(unitIdx)}
-                style={styles.unitHeader}
+                style={styles.centerPlayButton}
+                onPress={togglePlayPause}
               >
-                <View style={styles.unitHeaderContent}>
-                  <View style={styles.unitIndicator}>
-                    <Text style={styles.unitNumber}>Unit {unitIdx + 1}</Text>
-                  </View>
-                  <Text style={styles.unitTitle}>{unit.unitTitle}</Text>
-                </View>
-                <MaterialIcons 
-                  name={activeUnitIndex === unitIdx ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
-                  size={24} 
-                  color="#555" 
+                <Ionicons 
+                  name={isPlaying ? 'pause' : 'play'} 
+                  size={48} 
+                  color="white" 
+                  style={styles.centerPlayIcon}
                 />
               </TouchableOpacity>
-
-              {activeUnitIndex === unitIdx && (
-                <View style={styles.subjectsContainer}>
-                  {unit.subjects.map((subject, subIdx) => (
-                    <View key={subIdx} style={styles.subjectBlock}>
-                      <TouchableOpacity 
-                        onPress={() => handleSubjectPress(subIdx)}
-                        style={styles.subjectHeader}
-                      >
-                        <View style={styles.subjectHeaderContent}>
-                          <MaterialIcons name="subject" size={18} color="#2196F3" />
-                          <Text style={styles.subjectTitle}>{subject.subjectTitle}</Text>
-                        </View>
-                        <MaterialIcons 
-                          name={activeSubjectIndex === subIdx ? 'expand-less' : 'expand-more'} 
-                          size={20} 
-                          color="#777" 
-                        />
-                      </TouchableOpacity>
-
-                      {activeSubjectIndex === subIdx && (
-                        <View style={styles.subjectContent}>
-                          <Text style={styles.subjectDescription}>{subject.content}</Text>
-                          <View style={styles.videoList}>
-                            {subject.videos.map((video) =>
-                              renderVideoCard(video, unit.unitTitle)
-                            )}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  ))}
+            )} */}
+            
+            {/* Video Controls Overlay */}
+            {showControls && (
+              <View style={styles.controlsOverlay}>
+                {/* Top controls */}
+                {/* {isFullScreen && (
+                  <View style={styles.topControls}>
+                    <TouchableOpacity 
+                      style={styles.controlButton}
+                      onPress={toggleFullScreen}
+                    >
+                      <Ionicons 
+                        name="contract-outline" 
+                        size={24} 
+                        color="white" 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )} */}
+                
+                {/* Center play button */}
+                <TouchableOpacity 
+                  style={styles.centerPlayButton}
+                  onPress={togglePlayPause}
+                >
+                  <Ionicons 
+                    name={isPlaying ? 'pause' : 'play'} 
+                    size={48} 
+                    color="white" 
+                  />
+                </TouchableOpacity>
+                
+                {/* Bottom controls */}
+                <View style={styles.bottomControls}>
+                  <Text style={styles.timeText}>
+                    {formatTime(currentTime)}
+                  </Text>
+                  
+                  <Slider
+                    style={styles.progressSlider}
+                    minimumValue={0}
+                    maximumValue={1}
+                    value={currentTime / duration || 0}
+                    onSlidingStart={onSlidingStart}
+                    onSlidingComplete={onSlidingComplete}
+                    minimumTrackTintColor="#FF0000"
+                    maximumTrackTintColor="#FFFFFF"
+                    thumbTintColor="#FF0000"
+                  />
+                  
+                  <Text style={styles.timeText}>
+                    {formatTime(duration)}
+                  </Text>
+                  
+                  {!isFullScreen && (
+                    <TouchableOpacity 
+                      style={styles.controlButton}
+                    //  onPress={toggleFullScreen}
+                    >
+                      <Ionicons 
+                        name="expand-outline" 
+                        size={24} 
+                        color="white" 
+                      />
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
-            </View>
-          ))}
-        </ScrollView>
+              </View>
+            
+            )}
+              </View>
+            {!isFullScreen && (
+              <View style={styles.videoInfoPanel}>
+                <Text style={styles.currentChapter}>{selectedVideo.chapterTitle}</Text>
+                <Text style={styles.videoTitleLarge}>{selectedVideo.title}</Text>
+                <Text style={styles.videoDescriptionLarge}>
+                  {selectedVideo.description}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Chapters and Videos List - Hide in fullscreen mode */}
+        {!isFullScreen && (
+          <ScrollView style={styles.chaptersList}>
+            {courseData.map((chapter, chapterIndex) => (
+              <View key={chapterIndex} style={styles.chapterContainer}>
+                <TouchableOpacity 
+                  style={styles.chapterHeader}
+                  onPress={() => toggleChapter(chapterIndex)}
+                >
+                  <View style={styles.chapterNumber}>
+                    <Text style={styles.chapterNumberText}>
+                      {chapter.chapterNumber}
+                    </Text>
+                  </View>
+                  <Text style={styles.chapterTitle}>{chapter.chapterTitle}</Text>
+                  <Ionicons 
+                    name={expandedChapters[chapterIndex] ? 'chevron-up' : 'chevron-down'} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+                
+                {expandedChapters[chapterIndex] && (
+                  <View style={styles.videosContainer}>
+                    {chapter.videos.map((video) => 
+                      renderVideoItem(video, chapterIndex, selectedVideo?.id === video.id)
+                    )}
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
+    </SafeAreaView>
     </ContainerComponent>
   );
 };
 
-export default TeluguSubject;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '',
+    //backgroundColor: '#F8F9FA',
   },
-  scrollView: {
-    paddingHorizontal: 15,
+  fullScreenContainer: {
+    //backgroundColor: '#000',
   },
-  courseTitle: {
-    fontSize: 24,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+ //   backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 20,
-    marginBottom: 5,
   },
-  courseSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
+  placeholder: {
+    width: 32,
   },
-  videoContainer: {
+  content: {
+    flex: 1,
+  },
+  fullScreenContent: {
     backgroundColor: '#000',
-    paddingVertical: 10,
   },
-  nowPlaying: {
-    color: '#fff',
-    fontWeight: '600',
-    marginBottom: 5,
-    paddingLeft: 15,
+  videoSection: {
+    backgroundColor: '#000',
+    position: 'relative',
   },
-  resumeText: {
-    color: '#4CAF50',
-    textAlign: 'center',
-    marginTop: 5,
-    fontSize: 12,
+  fullScreenVideoSection: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
   },
   videoPlayer: {
-    height: SH(200),
+    height: 240,
     width: '100%',
   },
-  unitBlock: {
-    backgroundColor: '#fff',
+  fullScreenVideoPlayer: {
+    height: '100%',
+    width: '100%',
+  },
+  controlsOverlay: {
+    // position: 'absolute',
+    // top: 0,
+    // left: 0,
+    // right: 0,
+    // bottom: 0,
+    justifyContent: 'space-between',
+  //  backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  topControls: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 16,
+    paddingTop: Platform.OS === 'ios' ? 40 : 16,
+  },
+  centerPlayButton: {
+    position: 'absolute',
+   // top: 20,
+    left: 0,
+    right: 0,
+    bottom: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerPlayIcon: {
+ //   backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 50,
+  },
+  bottomControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+   // paddingBottom: 1,
+  },
+  progressSlider: {
+    flex: 1,
+    height: 40,
+    marginHorizontal: 10,
+  },
+  timeText: {
+    color: 'white',
+    fontSize: 12,
+    width: 40,
+  },
+  controlButton: {
+    padding: 8,
+   // backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+  },
+  videoInfoPanel: {
+    padding: 16,
+    //backgroundColor: 'white',
+  },
+  currentChapter: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  videoTitleLarge: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  videoDescriptionLarge: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  chaptersList: {
+    flex: 1,
+    padding: 16,
+  },
+  chapterContainer: {
+    marginBottom: 16,
+    backgroundColor: 'white',
     borderRadius: 12,
-    marginBottom: 15,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
+    elevation: 2,
   },
-  unitHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f5f7ff',
-  },
-  unitHeaderContent: {
+  chapterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    padding: 16,
   },
-  unitIndicator: {
-    backgroundColor: '#2196F3',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  chapterNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4361EE',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
-  unitNumber: {
+  chapterNumberText: {
     color: 'white',
-    fontSize: 12,
     fontWeight: 'bold',
+    fontSize: 16,
   },
-  unitTitle: {
+  chapterTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
     flex: 1,
   },
-  subjectsContainer: {
-    paddingHorizontal: 10,
+  videosContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  subjectBlock: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  subjectHeader: {
+  videoItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  subjectHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  selectedVideoItem: {
+    backgroundColor: '#F0F7FF',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4361EE',
   },
-  subjectTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#444',
-    marginLeft: 10,
-    flex: 1,
-  },
-  subjectContent: {
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-  },
-  subjectDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  videoList: {
-    marginTop: 5,
-  },
-  videoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  videoCardSelected: {
-    borderColor: '#2196F3',
-    backgroundColor: '#f0f7ff',
-  },
-  thumbnailContainer: {
+  videoThumbnailContainer: {
     position: 'relative',
+    width: 120,
+    height: 80,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 12,
   },
-  thumbnail: {
+  videoThumbnail: {
     width: '100%',
-    height: 150,
+    height: '100%',
   },
-  playIconContainer: {
+  playIconOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -592,12 +654,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   durationBadge: {
     position: 'absolute',
-    bottom: 10,
-    right: 10,
+    bottom: 6,
+    right: 6,
     backgroundColor: 'rgba(0,0,0,0.7)',
     borderRadius: 4,
     paddingHorizontal: 6,
@@ -607,7 +669,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
   },
-  progressBarContainer: {
+  thumbnailProgressContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -615,28 +677,45 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
-  progressBar: {
+  thumbnailProgress: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FF0000',
   },
-  cardContent: {
-    padding: 15,
+  videoInfo: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  videoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  videoDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  videoActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  videoTitle: {
-    fontSize: 14,
+  favButton: {
+    padding: 4,
+  },
+  chapterTag: {
+    backgroundColor: '#E6F7FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  chapterTagText: {
+    fontSize: 12,
+    color: '#1890FF',
     fontWeight: '500',
-    color: '#333',
-    flex: 1,
-    marginRight: 10,
-  },
-  icons: {
-    flexDirection: 'row',
-  },
-  iconButton: {
-    padding: 8,
-    marginLeft: 5,
   },
 });
+
+export default CoursePlayerScreen;

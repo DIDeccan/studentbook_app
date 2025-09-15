@@ -19,22 +19,22 @@ const SwipperScreen = props => {
   const Swiperdata = [
     {
       key: 's1',
-      text: 'Swiper_title_1',
-      title: 'Swiper_title_2',
+      text: 'Learning made fun, interactive, and effective — specially designed for students from Classes 6 to 10.',
+      title: 'Student Book',
       animation: Swiper_First,
       backgroundColor: 'transparent',
     },
     {
       key: 's2',
-      text: 'Swiper_title_3',
-      title: 'Swiper_title_4',
+      text: 'Explore subjects, quizzes, and live doubt-solving with top educators.',
+      title: 'Student Book',
       animation: Swiper_Two,
       backgroundColor: 'transparent',
     },
     {
       key: 's3',
-      text: 'Swiper_title_5',
-      title: 'Swiper_title_6',
+      text: 'Track your progress with personalized dashboards, earn badges for achievements, and access offline videos anytime, anywhere',
+      title: 'Student Book',
       animation: Swiper_Three,
       backgroundColor: 'transparent',
     },
@@ -62,7 +62,7 @@ const SwipperScreen = props => {
   const _renderNextButton = () => {
     return (
       <View style={SwiperStyle.setbgbuttondiv}>
-        <Text style={SwiperStyle.nextbuttoncolorset}>{t('Next_Started')}</Text>
+        <Text style={SwiperStyle.nextbuttoncolorset}>{t('Next')}</Text>
       </View>
     );
   };
@@ -74,7 +74,7 @@ const SwipperScreen = props => {
           onPress={() => navigation.navigate('LandingPage')}
         >
           <Text style={SwiperStyle.nextbuttoncolorset}>
-            {t('Skip_Started')}
+            {t('Skip')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -82,8 +82,9 @@ const SwipperScreen = props => {
   };
   const _renderDoneButton = () => {
     return (
+      
       <Buttons
-        title={t('Get_Started')}
+        title={t('Get Started')}
         buttonStyle={SwiperStyle.buttonStyle}
         onPress={() => navigation.navigate('LandingPage')}
       />

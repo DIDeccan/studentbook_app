@@ -19,6 +19,7 @@ import { getProfile } from '../../redux/reducer/profileReducer';
 import { unwrapResult } from "@reduxjs/toolkit";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logoutAction, logoutActionReducer } from '../../redux/reducer/authReducer';
+import { baseURL } from '../../utils/config/config';
 
 const ProfileSection = ({ navigation }) => {
   const dispatch = useDispatch()
@@ -27,19 +28,26 @@ const ProfileSection = ({ navigation }) => {
   let colors = (themeMode === 'dark') ? darkColors : lightColors;
   const styles = themedStyles(colors);
   const [logout, setLogOut] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImage, setProfileImage] = useState(getProfileData?.profile_image);
   const profileData = useSelector(state => state.profileData);
   const { refresh_token, loading, } = useSelector((state) => state.auth)
 const[refresh1,setRefresh] = useState(null)
+// console.log(profileImage,"====================----")
+
+
   const app = async () => {
     let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
     console.log(refreshToken, "========refresh=====", refresh_token, "refresh_token",)
     setRefresh(refreshToken)
+     let studentId = await AsyncStorage.getItem('studentId')
+    let classId = await AsyncStorage.getItem('classId')
+        dispatch(getProfile({ student_id: studentId, class_id: classId}))
+        setProfileImage(getProfileData?.profile_image);
+        // console.log(baseURL+profileImage,"img")
   };
-//console.log(getProfileData,"===============fet")
+// console.log(getProfileData,"===============fet")
   useEffect(() => {
     app()
-   dispatch(getProfile({ student_id: 148, class_id: 2}))
    setProfileImage(getProfileData?.profile_image);
   }, [dispatch])
 
@@ -57,12 +65,9 @@ const handleConfirmLogout = async () => {
       return;
     }else{
     const res = await dispatch(logoutAction({ refresh: refreshToken }));
-
     if (res.meta.requestStatus === "fulfilled") {
-      // Logout success
       navigation.replace("LoginScreen");
     } else if (res.meta.requestStatus === "rejected") {
-      // Logout failed → check payload
          navigation.replace("LoginScreen");
       const errorMessage =
         res.payload?.detail ||
@@ -95,11 +100,12 @@ const handleConfirmLogout = async () => {
         <View style={styles.profileHeader}>
 
           <Image
-            source={{ uri: `http://192.168.0.19:8000/${profileImage}` || 'https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png'}}
+            source={{ uri: profileImage !== null?  baseURL+profileImage : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='}}
             style={styles.profileImage}
+            resizeMode='cover'
           />
 
-          <Text style={[styles.name]}>Vasavi Pillala</Text>
+          <Text style={[styles.name]}>{getProfileData?.first_name}</Text>
           <Text style={styles.title}>React Native Developer | Vizianagaram</Text>
         </View>
 
@@ -179,7 +185,7 @@ const handleConfirmLogout = async () => {
             </TouchableOpacity>
 
             {/* Notifications */}
-            <TouchableOpacity style={styles.touchableCard}>
+            {/* <TouchableOpacity style={styles.touchableCard}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Image
                   source={{ uri: 'https://cdn-icons-png.freepik.com/512/4556/4556844.png' }}
@@ -191,7 +197,7 @@ const handleConfirmLogout = async () => {
                 </Text>
               </View>
               <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Logout */}
             <TouchableOpacity

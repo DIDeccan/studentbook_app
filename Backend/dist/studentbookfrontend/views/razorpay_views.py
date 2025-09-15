@@ -105,7 +105,7 @@ class TransactionAPIView(APIView):
 
             student = request.user
 
-            payment = rz_client.payment.fetch(data.get("razorpay_payment_id"))
+            payment = client.payment.fetch(data.get("razorpay_payment_id"))
             payment_method = payment.get("method")
       
 
