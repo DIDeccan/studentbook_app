@@ -69,6 +69,100 @@ class RazorpayOrderAPIView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
+# class TransactionAPIView(APIView):
+#     """This API will complete the order and save the transaction"""
+
+#     # permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         data = request.data
+        
+#         if not data.get("razorpay_order_id"):
+#             return api_response(
+#                 message="Order Id Not Given",
+#                 message_type="error",
+#                 status_code=status.HTTP_400_BAD_REQUEST
+#             )
+#         elif not data.get("razorpay_payment_id"):
+#             return api_response(
+#                 message="Payment Id Not Given",
+#                 message_type="error",
+#                 status_code=status.HTTP_400_BAD_REQUEST
+#             )
+#         elif not data.get("razorpay_signature"):
+#             return api_response(
+#                 message="Payment Signature Id Not Given",
+#                 message_type="error",
+#                 status_code=status.HTTP_400_BAD_REQUEST
+#             )
+#         try:
+#             # Verify payment
+#             rz_client.verify_payment_signature(
+#                 razorpay_order_id=data.get("razorpay_order_id"),
+#                 razorpay_payment_id=data.get("razorpay_payment_id"),
+#                 razorpay_signature=data.get("razorpay_signature")
+#             )
+
+#             student = request.user
+
+#             payment = client.payment.fetch(data.get("razorpay_payment_id"))
+#             payment_method = payment.get("method")
+      
+
+
+#             purchase_date = timezone.now()
+#             valid_till = purchase_date + timedelta(days=365)
+
+#             # Create new StudentPackage subscription for this purchase
+#             subscriptionorder = SubscriptionOrder.objects.filter(student = student).first()
+#             student_package = StudentPackage.objects.create(
+#                 student=subscriptionorder.student,
+#                 course=subscriptionorder.course,
+#                 price=subscriptionorder.price if subscriptionorder.price else 0,  # default to 0 if not provided
+#                 subscription_taken_from=purchase_date,
+#                 subscription_valid_till=valid_till
+#             )
+            
+#             subscriptionorder.payment_status = 'completed'
+#             subscriptionorder.payment_mode = payment_method if payment_method else 'NA'
+#             subscriptionorder.save()
+#             # Activate student if inactive
+#             if not student.is_active:
+#                 student.is_active = True
+#                 student.save()
+
+#             data = {
+#                 "student_package_id": student_package.id,
+#                 "student_id": student.id,
+#                 "class_id": student_package.course.id
+#             }
+#             return api_response(
+#                         message="Transaction verified and course added to student packages",
+#                         message_type="success",
+#                         status_code=status.HTTP_201_CREATED,
+#                         data = data
+#                     )
+
+#         except SignatureVerificationError:
+#             subscriptionorder.payment_status = 'failed'
+#             subscriptionorder.save()
+
+#             return api_response(
+#                         message="Payment signature verification failed",
+#                         message_type="error",
+#                         status_code=status.HTTP_400_BAD_REQUEST,
+#                     )
+
+#         except Exception as e:
+#             # return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             return api_response(
+#                         message=str(e),
+#                         message_type="error",
+#                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                     )
+
+
 class TransactionAPIView(APIView):
     """This API will complete the order and save the transaction"""
 

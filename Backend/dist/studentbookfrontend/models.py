@@ -4,6 +4,8 @@ from django.utils import timezone
 from datetime import timedelta
 from smart_selects.db_fields import ChainedForeignKey
 import datetime
+from storages.backends.s3boto3 import S3Boto3Storage
+
 def generate_transaction_id():
     today = datetime.date.today().strftime("%Y%m%d")  # e.g. 20250903
     last_order = SubscriptionOrder.objects.filter(
@@ -238,84 +240,103 @@ class Subject(models.Model):
         return self.name
     
 
-class Unit(models.Model):
+class Semester(models.Model):
 
     """
-    Represents a unit or chapter within a specific subject and class.
-    Stores unit name, the related subject, and the class it belongs to.
+    Represents a Semester or chapter within a specific subject and class.
+    Stores Semester name, the related subject, and the class it belongs to.
     """
-
-    unit_name = models.CharField(max_length=100)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='units')
-    subject = ChainedForeignKey(Subject, chained_field="course",
-        chained_model_field="course" ,on_delete=models.CASCADE, related_name="units")
+    
+    semester_name = models.CharField(max_length=100)
+    semester_number = models.IntegerField(null=True, blank=True)
+    # course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='semester')
+    # subject = ChainedForeignKey(Subject, chained_field="course",
+    #     chained_model_field="course" ,on_delete=models.CASCADE, related_name="semester")
     
 
     def __str__(self):
-        return self.unit_name
-    
+        return self.semester_name
+
+
 class Chapter(models.Model):
     """
     Represents a chapter within a specific unit, subject, and class.
     Stores chapter name, optional description and icon, and links to its unit, subject, and class.
     """
     chapter_name = models.CharField(max_length=255)
+    chapter_number = models.IntegerField(null=True, blank=True)
     description = models.CharField(max_length=255, blank=True, null=True)
     chapter_icon = models.ImageField(upload_to='chapter_icons/', blank=True, null=True)
     course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='chapters')
     subject = ChainedForeignKey(Subject, chained_field="course",chained_model_field="course" ,on_delete=models.CASCADE, related_name="chapters")
-    unit = ChainedForeignKey(Unit,chained_field="subject",chained_model_field="subject", on_delete=models.CASCADE, related_name='chapters')
+    # semester = ChainedForeignKey(Semester,chained_field="subject",chained_model_field="subject", on_delete=models.CASCADE, related_name='chapters',null=True, blank=True)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='chapters')
+
+    
     
 
     def __str__(self):
         return self.chapter_name
 
-class Topic(models.Model):
 
-    """
-    Represents a topic within a specific chapter, unit, subject, and class.
-    Stores topic name, optional description, and links to its chapter, unit, subject, and class.
-    """
+class Subchapter(models.Model):
+    subchapter = models.CharField(max_length=20)
+    parent_subchapter = models.CharField(max_length=50, blank=True)
+    course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='subchapter')
+    subject = ChainedForeignKey(Subject, chained_field="course",chained_model_field="course" ,on_delete=models.CASCADE, related_name="subchapter")
+    # semester = ChainedForeignKey(Semester,chained_field="subject",chained_model_field="subject", on_delete=models.CASCADE, related_name='subchapter')
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='subchapter')
+    # chapter = ChainedForeignKey(Chapter, chained_field="subject",chained_model_field="subject" ,on_delete=models.CASCADE, related_name='subchapter')
+    chapter = models.ForeignKey(Chapter, on_delete=models.SET_NULL, null=True, blank=True)
+    video_name = models.CharField(max_length=255)
+    video_url = models.URLField()   # final S3/CloudFront URL
+    vedio_duration = models.CharField(max_length=50, blank=True, null=True)  # e.g. "15:30"
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    topic_name = models.CharField(max_length=255)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='topics')
-    subject = ChainedForeignKey(Subject, chained_field="course",chained_model_field="course" ,on_delete=models.CASCADE, related_name="topics")
-    unit = ChainedForeignKey(Unit,chained_field="subject",chained_model_field="subject", on_delete=models.CASCADE, related_name='topics')
-    chapter_name = ChainedForeignKey(Chapter, chained_field="unit",chained_model_field="unit" ,on_delete=models.CASCADE, related_name='topics')
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["course", "subject", "semester", "chapter", "subchapter"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        """
+        Automatically set parent_subchapter:
+        - If subchapter = "5.1.1" → parent = "5.1"
+        - If subchapter = "5.1"   → parent = "5.1" (itself, since top-level)
+        """
+        if "." in self.subchapter:
+            self.parent_subchapter = ".".join(self.subchapter.split(".")[:-1])
+        else:
+            self.parent_subchapter = self.subchapter
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.topic_name   
+        return f"{self.video_name} (Class {self.course}, Subject {self.subject})"
 
-
-class SubTopic(models.Model):
-
-    """
-    Represents a subtopic within a specific topic, chapter, unit, subject, and class.
-    Stores subtopic name, optional description, and links to its topic, chapter, unit, subject, and class.
-    """
-
-    subtopic_name = models.CharField(max_length=255)
-    description = models.CharField(max_length=255, blank=True, null=True)
-    course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='subtopics')
-    subject = ChainedForeignKey(Subject, chained_field="course",chained_model_field="course" ,on_delete=models.CASCADE, related_name="subtopics")
-    unit = ChainedForeignKey(Unit,chained_field="subject",chained_model_field="subject", on_delete=models.CASCADE, related_name='subtopics')
-    chapter_name = ChainedForeignKey(Chapter, chained_field="unit",chained_model_field="unit" ,on_delete=models.CASCADE, related_name='subtopics')
-    topic_name = ChainedForeignKey(Topic,chained_field = 'chapter_name' ,on_delete=models.CASCADE, related_name='subtopics')
-
-    def __str__(self):
-        return self.subtopic_name
-        
+       
 class GeneralContent(models.Model):
     """
     Represents general content that can be associated with a Yoga, Sports, GK etc.
     Stores content title, description, optional file attachment, and links to its related entities.
     """
     title = models.CharField(max_length=255)
+    sub_title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    image = models.FileField(upload_to='general_content_files/', blank=True, null=True)
+    image = models.FileField(upload_to='general_content_files/', blank=True, null=True, storage=S3Boto3Storage())
 
 
     def __str__(self):
         return self.title
+
+
+
+# tracking models
+class VideoTrackingLog(models.Model):
+    student = models.ForeignKey("Student", on_delete=models.CASCADE, related_name="videotracking_log")
+    subchapter = models.ForeignKey(Subchapter, on_delete=models.CASCADE, related_name="videotracking_log")
+    watched_duration = models.DurationField(default=0)  # actual time user watched
+    completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"{self.student} - {self.subchapter} ({self.watched_duration})"
