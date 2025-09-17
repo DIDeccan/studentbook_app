@@ -16,8 +16,13 @@ import { translate } from '../../utils/config/i18n';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
+import { darkColors, lightColors } from '../../utils/Colors';
+import { useSelector } from 'react-redux';
 
 const ContentSection = ({navigation}) => {
+  const themeMode = useSelector((state) => state.theme.theme);
+  let colors = (themeMode === 'dark') ? darkColors : lightColors;
+  const styles = themedStyles(colors);
   const [search, setSearch] = useState('');
   const [chooseClass, setChooseClass] = useState(false);
   const [classDrop, setClassDrop] = useState(false);
@@ -247,7 +252,7 @@ const ContentSection = ({navigation}) => {
 
 export default ContentSection;
 
-const styles = StyleSheet.create({
+const themedStyles =(colors)=> StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SW(15),

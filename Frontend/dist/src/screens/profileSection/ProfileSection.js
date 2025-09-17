@@ -20,6 +20,7 @@ import { unwrapResult } from "@reduxjs/toolkit";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logoutAction, logoutActionReducer } from '../../redux/reducer/authReducer';
 import { baseURL } from '../../utils/config/config';
+import { useIsFocused } from "@react-navigation/native";
 
 const ProfileSection = ({ navigation }) => {
   const dispatch = useDispatch()
@@ -32,24 +33,32 @@ const ProfileSection = ({ navigation }) => {
   const profileData = useSelector(state => state.profileData);
   const { refresh_token, loading, } = useSelector((state) => state.auth)
 const[refresh1,setRefresh] = useState(null)
-// console.log(profileImage,"====================----")
+const isFocused = useIsFocused();
+//console.log(profileImage,"====================----", getProfileData)
 
 
   const app = async () => {
-    let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
-    console.log(refreshToken, "========refresh=====", refresh_token, "refresh_token",)
-    setRefresh(refreshToken)
      let studentId = await AsyncStorage.getItem('studentId')
     let classId = await AsyncStorage.getItem('classId')
         dispatch(getProfile({ student_id: studentId, class_id: classId}))
         setProfileImage(getProfileData?.profile_image);
+      let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
+   // console.log(refreshToken, "========refresh=====", refresh_token, "refresh_token",)
+    setRefresh(refreshToken)
         // console.log(baseURL+profileImage,"img")
   };
 // console.log(getProfileData,"===============fet")
+useEffect(() => {
+  if (isFocused) {
+    app(); // reload profile whenever screen is focused
+  }
+}, [isFocused]);
+
   useEffect(() => {
-    app()
-   setProfileImage(getProfileData?.profile_image);
-  }, [dispatch])
+  if (getProfileData?.profile_image) {
+    setProfileImage(getProfileData.profile_image);
+  }
+}, [getProfileData]);
 
   const EditProfileBtn = () => {
     navigation.navigate('EditProfile');
@@ -84,11 +93,13 @@ const handleConfirmLogout = async () => {
   }
 };
 
-
   const settingScreenBtn = () => {
     navigation.navigate('SettingScreen')
   }
 
+  const imageUri = profileImage
+  ? `${baseURL}${profileImage}`
+  : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg";
   return (
     <>
       <ContainerComponent>``
@@ -100,7 +111,7 @@ const handleConfirmLogout = async () => {
         <View style={styles.profileHeader}>
 
           <Image
-            source={{ uri: profileImage !== null?  baseURL+profileImage : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='}}
+            source={{ uri: imageUri }}
             style={styles.profileImage}
             resizeMode='cover'
           />
@@ -299,7 +310,7 @@ const themedStyles = (colors) => StyleSheet.create({
   },
   modalContainer: {
     width: '80%',
-    backgroundColor: 'white',
+    backgroundColor: colors.grey,
     padding: 20,
     borderRadius: 10,
     alignItems: 'center'

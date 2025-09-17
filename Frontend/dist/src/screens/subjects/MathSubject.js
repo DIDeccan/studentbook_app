@@ -72,7 +72,8 @@ const MathSubject = () => {
 
   const courseData = [
     {
-      unitTitle: 'Unit 1: Introduction',
+      unitName: 'Unit 1',
+      unitTitle: 'Introduction',
       subjects: [
         {
           subjectTitle: 'Subject 1: Basics of Programming',

@@ -106,7 +106,7 @@ console.log("ref22===", classId);
       <TouchableWithoutFeedback>
         <ScrollView>
           <View style={[styles.mainView]}>
-            <StatusBar backgroundColor={'white'} barStyle={'dark-content'} />
+            {/* <StatusBar backgroundColor={'white'} barStyle={'dark-content'} /> */}
             <Image source={Spalsh_Logo1} style={styles.loginImage} />
             <Text style={styles.title}>{translate('textWelcomeBack')}</Text>
             <Text style={styles.subTitleTxt}>
@@ -150,7 +150,7 @@ console.log("ref22===", classId);
                 >
                   <MaterialCommunityIcons
                     size={SH(30)}
-                    color={''}
+                    color={colors.text}
                     name={passVisible ? 'eye-outline' : 'eye-off-outline'}
                   />
                 </TouchableOpacity>
@@ -214,11 +214,13 @@ const themedStyles =(colors)=> StyleSheet.create({
     fontFamily: Fonts.Medium,
     marginBottom: SH(10),
     textAlign: 'center',
+    color:colors.text
   },
   title: {
     fontSize: SF(22),
     fontFamily: Fonts.Bold,
     textAlign: 'center',
+    color:colors.text
   },
   textInput: {
     borderWidth: 1,
@@ -259,19 +261,21 @@ const themedStyles =(colors)=> StyleSheet.create({
     marginTop: SH(20),
     alignItems: 'center',
     justifyContent: 'center',
+    color:colors.text
   },
   dontHAc: {
     fontSize: SF(15),
+    color:colors.text
   },
   signUp: {
     fontSize: SF(15),
     fontFamily: Fonts.Bold,
     marginLeft: SW(1),
-    color: 'blue',
+    color: colors.primary,
   },
   forgotPass: {
     fontSize: SF(15),
-    color: 'blue',
+    color: colors.primary,
     alignSelf: 'flex-end',
     marginTop: SF(10),
     ...Platform.select({

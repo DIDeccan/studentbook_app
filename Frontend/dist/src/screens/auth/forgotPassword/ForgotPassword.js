@@ -125,15 +125,10 @@ if (sendOtpPassword.fulfilled.match(send)) {
             <OTPInput
               length={6}
         onSubmit={async(otp)=>{
-             console.log(phone,"phone", otp,"opt")
-             console.log("Hiii5")
       try {
- 
     const result = await dispatch(
       verifyOtp1({ user: phone, otp })
     );
-  console.log("Hiii22")
-
     if (verifyOtp1.fulfilled.match(result)) {
       console.log("Success:", result.payload);
       Alert.alert(

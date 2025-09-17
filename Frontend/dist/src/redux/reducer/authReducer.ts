@@ -344,15 +344,12 @@ export const CreateOrder = createAsyncThunk(
       }
     } catch (error: any) {
       if (error.response) {
-        // Server responded with a status code (4xx, 5xx)
         console.error('API Error:', error.response.data);
         return rejectWithValue(error.response.data);
       } else if (error.request) {
-        // No response received
         console.error('No response received:', error.request);
         return rejectWithValue('No response from server');
       } else {
-        // Something else happened
         console.error('Unexpected Error:', error.message);
         return rejectWithValue(error.message);
       }
@@ -416,34 +413,6 @@ export const paymentVerify = createAsyncThunk(
   }
 );
 
-// export const logoutAction = createAsyncThunk(
-//   "logout",
-//   async (
-//     { refresh }: { refresh: string },
-//     { getState,rejectWithValue }
-//   ) => {
-//     try {
-//       const state: any = getState();
-//       const storedToken = await AsyncStorage.getItem('access_token')
-//       const rawToken = state.auth?.token || storedToken
-//       const token = rawToken?.replace(/^['"]+|['"]+$/g, "")
-//        const data = { refresh };
-//        console.log("reduxdatalogout", data)
-//        const response = await api.post(endpoints.LOGOUT, data, {
-//         headers: {
-//           "Content-Type": "application/json",
-//           Accept: "application/json",
-//           Authorization: token ? `Bearer ${token}` : '',
-//         },
-//       });
-//       return response.data; // { message: "Logged out successfully.", message_type: "success" }
-//     } catch (err: any) {
-//       return rejectWithValue(
-//         err.response?.data || { message: "Logout failed", message_type: "error" }
-//       );
-//     }
-//   }
-// );
 export const logoutAction = createAsyncThunk(
   "logoutAction",
   async (

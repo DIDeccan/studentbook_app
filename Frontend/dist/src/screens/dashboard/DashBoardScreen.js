@@ -3,10 +3,15 @@ import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
 import { BarChart, LineChart } from "react-native-chart-kit";
 import Icon from "react-native-vector-icons/Feather";
 import ContainerComponent from "../../components/commonComponents/Container";
+import { useSelector } from "react-redux";
+import { darkColors, lightColors } from "../../utils/Colors";
 
 const screenWidth = Dimensions.get("window").width;
 
 const Dashboard = () => {
+  const themeMode = useSelector((state) => state.theme.theme);
+  let colors = (themeMode === 'dark') ? darkColors : lightColors;
+  const styles = themedStyles(colors);
   return (
     <ContainerComponent>
          <ScrollView style={styles.container}>
@@ -121,7 +126,7 @@ const Dashboard = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const themedStyles =(colors)=> StyleSheet.create({
   container: {
     flex: 1,
    // backgroundColor: "",
@@ -131,11 +136,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 4,
+    color:colors.text
   },
   subHeader: {
     fontSize: 14,
     color: "#666",
     marginBottom: 20,
+    color:colors.text
   },
   statsRow: {
     flexDirection: "row",
@@ -158,16 +165,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 4,
+      //color:colors.text
   },
   statValue: {
     fontSize: 18,
     fontWeight: "bold",
     marginTop: 4,
+     // color:colors.text
   },
   chartTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginVertical: 10,
+      color:colors.text
   },
   chart: {
     borderRadius: 12,

@@ -5,8 +5,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SF, SH } from '../utils/dimensions';
 import HomeScreen from '../screens/home/HomeScreen';
 import MyLearnings from '../screens/mylearnings/MyLearnings';
-import HelpSection from '../screens/help/HelpSection';
 import ProfileSection from '../screens/profileSection/ProfileSection';
+import Dashboard from '../screens/dashboard/DashBoardScreen';
+
 
 const Tab = createBottomTabNavigator();
 
@@ -54,8 +55,8 @@ const BottomTabNavigations = () => {
             case 'learn':
               iconName = focused ? 'chatbubble' : 'chatbubble-outline';
               break;
-            case 'Help':
-              iconName = focused ? 'person' : 'person-outline';
+            case 'Dashbord':
+              iconName = focused ? 'cellular' : 'cellular-outline';
               break;
             default:
               iconName = 'ellipse';
@@ -69,7 +70,7 @@ const BottomTabNavigations = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="learn" component={MyLearnings} />
-      <Tab.Screen name="Help" component={HelpSection} />
+      <Tab.Screen name="Dashbord" component={Dashboard} />
       <Tab.Screen name="Profile" component={ProfileSection} />
     </Tab.Navigator>
   );

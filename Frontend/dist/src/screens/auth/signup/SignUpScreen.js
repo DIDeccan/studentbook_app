@@ -159,7 +159,7 @@ const SignUpScreen = ({ navigation }) => {
         {item.value === value && (
           <MaterialIcons
             size={SF(35)}
-            color={''}
+            color={colors.background}
             name={'keyboard-arrow-down'}
           />
         )}
@@ -342,7 +342,7 @@ const SignUpScreen = ({ navigation }) => {
                 </View>
               ) : null}
 
-              <Text style={{ fontSize: SF(15), marginTop: SH(5) }}>Class</Text>
+              <Text style={{ fontSize: SF(15), marginTop: SH(5),color:colors.text }}>Class</Text>
               <Dropdown
                 style={styles.dropdown}
                 placeholderStyle={styles.placeholderStyle}
@@ -387,7 +387,7 @@ const SignUpScreen = ({ navigation }) => {
                   >
                     <MaterialCommunityIcons
                       size={SF(30)}
-                      color={''}
+                      color={colors.text}
                       name={passVisible ? 'eye-outline' : 'eye-off-outline'}
                     />
                   </TouchableOpacity>
@@ -418,7 +418,7 @@ const SignUpScreen = ({ navigation }) => {
                   >
                     <MaterialCommunityIcons
                       size={SF(30)}
-                      color={''}
+                     color={colors.text}
                       name={conPassVisible ? 'eye-outline' : 'eye-off-outline'}
                     />
                   </TouchableOpacity>
@@ -474,7 +474,7 @@ const SignUpScreen = ({ navigation }) => {
             >
               <Text style={styles.title}>Verify Signup OTP</Text>
               <TouchableOpacity onPress={() => setShowOtpModal(false)}>
-                <Entypo size={SF(30)} color={''} name={'cross'} />
+                <Entypo size={SF(30)} color={colors.text} name={'cross'} />
               </TouchableOpacity>
             </View>
 
@@ -584,7 +584,7 @@ export default SignUpScreen;
 const themedStyles = colors =>
   StyleSheet.create({
     main: {
-      backgroundColor: '',
+    //  backgroundColor: '',
       flex: 1,
     },
     ContainerStyle: {
@@ -673,23 +673,7 @@ const themedStyles = colors =>
       fontSize: SF(15),
       color: colors.text,
     },
-    txtTnc: {
-      fontFamily: Fonts.Bold,
-      color: colors.text,
-    },
-    countryCodeDrop: {
-      flex: 1,
-      height: SH(150),
-      width: SW(200),
-      backgroundColor: 'white',
-      borderTopWidth: 0,
-      borderRadius: SH(5),
-      alignItems: 'center',
-      marginTop: SH(0),
-      bottom: SH(17),
-      position: 'absolute',
-      zIndex: 10,
-    },
+   
     ErrorMsg: {
       fontSize: SF(12),
       color: 'red',
@@ -710,6 +694,7 @@ const themedStyles = colors =>
       borderRadius: 12,
       padding: 12,
       borderWidth: 1,
+      borderColor:colors.text,
     },
     icon: {
       marginRight: 5,
@@ -723,7 +708,7 @@ const themedStyles = colors =>
     textItem: {
       flex: 1,
       fontSize: 16,
-      color: colors.text,
+      color: colors.background,
     },
     placeholderStyle: {
       fontSize: 16,
@@ -740,6 +725,7 @@ const themedStyles = colors =>
     inputSearchStyle: {
       height: 40,
       fontSize: 16,
+      color:colors.background
     },
     loaderOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -756,7 +742,7 @@ const themedStyles = colors =>
     },
     modalContent: {
       width: '90%',
-      backgroundColor: 'white',
+      backgroundColor:colors.text,
       padding: 20,
       borderRadius: 12,
     },

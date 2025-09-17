@@ -119,7 +119,7 @@ const LandingPage = ({ navigation }) => {
     const openFullScreen = () => {
       setFullScreenVideo(item);
     };
-
+//console.log(item,'====item====')
     return (
       <View style={styles.card}>
         <View style={styles.videoContainer}>

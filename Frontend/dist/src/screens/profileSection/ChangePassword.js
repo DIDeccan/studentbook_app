@@ -16,8 +16,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { changePassword } from '../../redux/reducer/profileReducer';
 import { useDispatch, useSelector } from 'react-redux';
+import { darkColors, lightColors } from '../../utils/Colors';
 
 const ChangePasswordScreen = () => {
+    const themeMode = useSelector((state) => state.theme.theme);
+    let colors = (themeMode === 'dark') ? darkColors : lightColors;
+    const styles = themedStyles(colors);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -153,7 +157,7 @@ const {loading} = useSelector((state)=> state.profile)
   );
 };
 
-const styles = StyleSheet.create({
+const themedStyles =(colors)=> StyleSheet.create({
   safeArea: {
     flex: 1,
     //backgroundColor: '#f8f9fa',
@@ -173,16 +177,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.text,
     textAlign: 'center',
   },
   form: {
-    backgroundColor: '#fff',
+    backgroundColor:colors.grey,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',

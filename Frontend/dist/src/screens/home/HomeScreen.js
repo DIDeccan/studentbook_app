@@ -116,10 +116,10 @@ const HomeScreen = ({ navigation }) => {
             </Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton}>
+            {/* <TouchableOpacity style={styles.iconButton}>
               <Fontisto name="bell" size={22} color={colors.text} />
               <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => dispatch(toggleTheme())}

@@ -9,17 +9,23 @@ import {
   Dimensions,
   SafeAreaView,
   StatusBar,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import Video from 'react-native-video';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Slider from '@react-native-community/slider';
 import ContainerComponent from '../../components/commonComponents/Container';
+import { darkColors, lightColors } from '../../utils/Colors';
+import { useSelector } from 'react-redux';
 
 const { width, height } = Dimensions.get('window');
 
 const CoursePlayerScreen = (props) => {
+  const themeMode = useSelector((state) => state.theme.theme);
+  let colors = (themeMode === 'dark') ? darkColors : lightColors;
+  const styles = themedStyles(colors);
   const [activeChapter, setActiveChapter] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [favorites, setFavorites] = useState({});
@@ -30,6 +36,7 @@ const CoursePlayerScreen = (props) => {
   const [showControls, setShowControls] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState({});
+  const [fullScreenVideo, setFullScreenVideo] = useState(null);
   
   const videoRef = useRef(null);
   const controlsTimeout = useRef(null);
@@ -226,6 +233,11 @@ const CoursePlayerScreen = (props) => {
     return videoProgress[videoId] || 0;
   };
 
+  const openFullScreen = () => {
+    console.log("heloo====098")
+      setFullScreenVideo(selectedVideo);
+    };
+
   const renderVideoItem = (video, chapterIndex, isSelected) => {
     const progress = getProgressForVideo(video.id);
     
@@ -286,7 +298,53 @@ const CoursePlayerScreen = (props) => {
       </TouchableOpacity>
     );
   };
+ // console.log(selectedVideo,"====sel")
 
+    const FullScreenVideo = () => {
+    const [paused, setPaused] = useState(false);
+    const videoRef = useRef(null);
+
+    const togglePlayPause = () => {
+      setPaused(!paused);
+    };
+
+    return (
+      <Modal
+        visible={fullScreenVideo !== null}
+        supportedOrientations={['portrait', 'landscape']}
+        animationType="fade"
+      >
+        <View style={styles.fullScreenContainer}>
+          <Video
+            ref={videoRef}
+            source={{ uri: fullScreenVideo?.url }}
+            style={styles.fullScreenVideo}
+            resizeMode="contain"
+            volume={1.0}
+            paused={paused}
+            controls={false}
+          />
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => setFullScreenVideo(null)}
+          >
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.fullScreenPlayButton}
+            onPress={togglePlayPause}
+          >
+            <Ionicons 
+              name={paused ? 'play-circle' : 'pause-circle'} 
+              size={64} 
+              color="rgba(255,255,255,0.8)" 
+            />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    );
+  };
+ // console.log(selectedVideo,"select====")
   return (
     <ContainerComponent>
     <SafeAreaView style={[styles.container, isFullScreen && styles.fullScreenContainer]}>
@@ -393,7 +451,7 @@ const CoursePlayerScreen = (props) => {
                   {!isFullScreen && (
                     <TouchableOpacity 
                       style={styles.controlButton}
-                    //  onPress={toggleFullScreen}
+                      onPress={openFullScreen}
                     >
                       <Ionicons 
                         name="expand-outline" 
@@ -454,11 +512,12 @@ const CoursePlayerScreen = (props) => {
         )}
       </View>
     </SafeAreaView>
+       {fullScreenVideo && <FullScreenVideo />}
     </ContainerComponent>
   );
 };
 
-const styles = StyleSheet.create({
+const themedStyles =(colors)=> StyleSheet.create({
   container: {
     flex: 1,
     //backgroundColor: '#F8F9FA',
@@ -716,6 +775,26 @@ const styles = StyleSheet.create({
     color: '#1890FF',
     fontWeight: '500',
   },
+    fullScreenContainer: {
+      flex: 1,
+      backgroundColor: 'black',
+      justifyContent: 'center',
+    },
+    fullScreenVideo: {
+      width: '100%',
+      height: '100%',
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 40,
+      right: 20,
+      zIndex: 10,
+    },
+    fullScreenPlayButton: {
+      position: 'absolute',
+      alignSelf: 'center',
+      zIndex: 10,
+    },
 });
 
 export default CoursePlayerScreen;

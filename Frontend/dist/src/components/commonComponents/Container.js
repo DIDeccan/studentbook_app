@@ -1,7 +1,7 @@
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import React, { useMemo } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-import Colors, { darkColors, lightColors } from '../../utils/Colors';
+import { darkColors, lightColors } from '../../utils/Colors';
 import { useDispatch, useSelector } from 'react-redux';
 
 function ContainerComponent({
@@ -45,7 +45,7 @@ const themeMode = useSelector((state) => state.theme.theme);
         colors={
     themeMode === 'dark'
       ? ['#000000', '#000000'] 
-      : ['rgba(254,238,245,1)', 'rgba(223,238,255,1)'] 
+      :['rgba(254,238,245,1)', 'rgba(223,238,255,1)']  
   }
         style={styles.linearGradient}>
         <SafeAreaView

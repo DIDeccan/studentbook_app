@@ -23,8 +23,13 @@ import { baseURL } from '../../utils/config/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Entypo from 'react-native-vector-icons/Entypo';
 import OTPInput from '../../components/commonComponents/OTPInput';
+import { color } from 'react-native-elements/dist/helpers';
+import Colors, { darkColors, lightColors } from '../../utils/Colors';
 
 const EditProfile = () => {
+  const themeMode = useSelector((state) => state.theme.theme);
+  let colors = (themeMode === 'dark') ? darkColors : lightColors;
+  const styles = themedStyles(colors);
   const dispatch = useDispatch();
   const getProfileData = useSelector((state) => state.profile.getProfileData);
   const { loading } = useSelector((state) => state.profile);
@@ -32,8 +37,8 @@ const EditProfile = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [profileImage, setProfileImage] = useState(getProfileData?.profile_image);
-  const[studentId,setStudentID] = useState('')
-  const[classIs,setClassId] = useState('')
+  const [studentId, setStudentID] = useState('')
+  const [classIs, setClassId] = useState('')
   const [originalData, setOriginalData] = useState(null);
   const [nameChanged, setNameChanged] = useState(false);
   const [emailChanged, setEmailChanged] = useState(false);
@@ -49,13 +54,13 @@ const EditProfile = () => {
       let classId = await AsyncStorage.getItem('classId')
       setClassId(studentId)
       setClassId(classId)
-        dispatch(getProfile({ student_id: studentId, class_id: classId}))
+      dispatch(getProfile({ student_id: studentId, class_id: classId }))
     };
     fetch();
   }, [dispatch]);
 
   useEffect(() => {
-    console.log("====", profileImage,"====profile====")
+    console.log("====", profileImage, "====profile====")
     if (!getProfileData) return;
     const orig = {
       first_name: getProfileData?.first_name || '',
@@ -72,7 +77,7 @@ const EditProfile = () => {
     setEmailChanged(false);
     setImageChanged(false);
     setPhoneChanged(false);
-    setPhoneVerified(true); 
+    setPhoneVerified(true);
     setIsSaveEnabled(false);
   }, [getProfileData]);
 
@@ -110,21 +115,21 @@ const EditProfile = () => {
     try {
       let studentId = await AsyncStorage.getItem('studentId')
       let classId = await AsyncStorage.getItem('classId')
-        await dispatch(
-          updateProfile({
-            student_id: studentId,
-            class_id: classId,
-            email,
-            first_name: name,
-            phone_number: phone,
-            profile_image: profileImage,
-          })
-        ).unwrap();
-      
+      await dispatch(
+        updateProfile({
+          student_id: studentId,
+          class_id: classId,
+          email,
+          first_name: name,
+          phone_number: phone,
+          profile_image: profileImage,
+        })
+      ).unwrap();
+
 
       Alert.alert('Success', 'Profile updated successfully');
       // refresh profile and reset flags
-      await dispatch(getProfile({ student_id: studentId, class_id: classId}));
+      await dispatch(getProfile({ student_id: studentId, class_id: classId }));
     } catch (err) {
       console.log('Update failed:', err);
       Alert.alert('Error', 'Failed to update profile. Try again.');
@@ -134,23 +139,23 @@ const EditProfile = () => {
   const handleVerifyPhone = async () => {
     setVerifying(true);
     setShowOtpModal(true)
-      try {
+    try {
       let studentId = await AsyncStorage.getItem('studentId')
       let classId = await AsyncStorage.getItem('classId')
-        await dispatch(
-          SendOtpUpdatePhoneNumber({
-            student_id: studentId,
-            class_id: classId,
-            new_phone_number:phone
-          })
-        ).unwrap();
+      await dispatch(
+        SendOtpUpdatePhoneNumber({
+          student_id: studentId,
+          class_id: classId,
+          new_phone_number: phone
+        })
+      ).unwrap();
       Alert.alert('Success', 'Otp sent');
-       setShowOtpModal(true) 
+      setShowOtpModal(true)
     } catch (err) {
       console.log('Update failed:', err);
       Alert.alert('Error', 'Failed to update profile. Try again.');
     }
-    
+
   };
 
   const requestStoragePermission = async () => {
@@ -182,7 +187,7 @@ const EditProfile = () => {
           launchCamera({ mediaType: 'photo' }, (response) => {
             if (response?.assets?.length) {
               const uri = response.assets[0].uri;
-            //  setProfileImage(uri);
+              //  setProfileImage(uri);
               setProfileImage(response.assets[0].uri);
               setImageChanged(true);
             }
@@ -197,7 +202,7 @@ const EditProfile = () => {
           launchImageLibrary({ mediaType: 'photo' }, (response) => {
             if (response?.assets?.length) {
               const uri = response.assets[0].uri;
-            //  setProfileImage(uri);
+              //  setProfileImage(uri);
               setProfileImage(response.assets[0].uri);
               setImageChanged(true);
             }
@@ -219,18 +224,18 @@ const EditProfile = () => {
 
       <ScrollView style={styles.container}>
         <View style={styles.profileContainer}>
-           <Image
-  source={{
-    uri:
-      profileImage && profileImage.startsWith('file')
-        ? profileImage // picked from camera/gallery
-        : profileImage
-        ? baseURL + profileImage // from backend
-        : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='
-  }}
-  style={styles.profileImage}
-  resizeMode="cover"
-/>
+          <Image
+            source={{
+              uri:
+                profileImage && profileImage.startsWith('file')
+                  ? profileImage // picked from camera/gallery
+                  : profileImage
+                    ? baseURL + profileImage // from backend
+                    : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='
+            }}
+            style={styles.profileImage}
+            resizeMode="cover"
+          />
           <TouchableOpacity style={styles.editIcon} onPress={chooseImage}>
             <MaterialIcons name="edit" size={22} color="#fff" />
           </TouchableOpacity>
@@ -243,7 +248,8 @@ const EditProfile = () => {
             onChangeText={setName}
             style={styles.input}
             placeholder="Enter name"
-            // if you actually want the name input to get focus automatically add: autoFocus
+            placeholderTextColor={colors.grey}
+          // if you actually want the name input to get focus automatically add: autoFocus
           />
         </View>
 
@@ -255,6 +261,7 @@ const EditProfile = () => {
             style={styles.input}
             keyboardType="email-address"
             placeholder="Enter email address"
+            placeholderTextColor={colors.grey}
           />
         </View>
 
@@ -267,6 +274,7 @@ const EditProfile = () => {
               style={[styles.input, { flex: 1 }]}
               keyboardType="phone-pad"
               placeholder="Enter phone number"
+              placeholderTextColor={colors.grey}
             />
             {!phoneVerified ? (
               verifying ? (
@@ -293,8 +301,8 @@ const EditProfile = () => {
           <Text style={styles.saveText}>Save Changes</Text>
         </TouchableOpacity>
       </ScrollView>
-           
-        <Modal
+
+      <Modal
         animationType="slide"
         transparent={true}
         visible={showOtpModal}
@@ -312,42 +320,37 @@ const EditProfile = () => {
             </View>
             <OTPInput
               length={6}
-        onSubmit={async(otp)=>{
-             console.log(phone,"phone", otp,"opt")
+              onSubmit={async (otp) => {
+                console.log(phone, "phone", otp, "opt")
+                try {
+                  const result = await dispatch(
+                    VerifyUpdatePhoneNumber({ new_phone_number: phone, otp: otp })
+                  );
+                  if (verifyOtp1.fulfilled.match(result)) {
+                    console.log("Success:", result.payload);
+                    Alert.alert(
+                      "Success",
+                      result.payload.message || "OTP Verified",
+                      [
+                        {
+                          text: "OK",
+                          onPress: () =>
+                            navigation.navigate("CreatePassword", { phone }),
+                        },
+                      ]
+                    );
+                  } else {
+                    console.log("Error:", result.payload);
+                    Alert.alert(
+                      "Error",
+                      result.payload?.message || "OTP verification failed"
+                    );
+                  }
+                } finally {
 
-      try {
- 
-    const result = await dispatch(
-    VerifyUpdatePhoneNumber({ new_phone_number:phone, otp:otp })
-    );
-    if (verifyOtp1.fulfilled.match(result)) {
-      console.log("Success:", result.payload);
-      Alert.alert(
-        "Success",
-        result.payload.message || "OTP Verified",
-        [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.navigate("CreatePassword", { phone }),
-          },
-        ]
-      );
-    } else {
-      console.log("Error:", result.payload);
-      Alert.alert(
-        "Error",
-        result.payload?.message || "OTP verification failed"
-      );
-    }
-  } finally {
-
-  }
-}}
-
-
+                }
+              }}
               onResend={() => {
-                console.log('🔄 Resend clicked');
                 dispatch(
                   reSendOtp({
                     phone_number: phone,
@@ -364,7 +367,7 @@ const EditProfile = () => {
 
 export default EditProfile;
 
-const styles = StyleSheet.create({
+const themedStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
@@ -396,15 +399,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: SF(14),
     fontWeight: '600',
-    color: '#333',
+    color:colors.text,
     marginBottom: 5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.text,
     padding: SH(10),
     borderRadius: 8,
     fontSize: SF(15),
+    color:colors.text
   },
   saveButton: {
     backgroundColor: '#007bff',
@@ -448,7 +452,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
   },
-    modalBackground: {
+  modalBackground: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
@@ -456,7 +460,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    backgroundColor: 'white',
+    backgroundColor:colors.grey,
     padding: 20,
     borderRadius: 12,
   },
