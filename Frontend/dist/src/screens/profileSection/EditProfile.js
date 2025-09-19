@@ -60,7 +60,6 @@ const EditProfile = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    console.log("====", profileImage, "====profile====")
     if (!getProfileData) return;
     const orig = {
       first_name: getProfileData?.first_name || '',

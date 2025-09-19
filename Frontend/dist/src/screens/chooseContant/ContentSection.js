@@ -194,7 +194,7 @@ const ContentSection = ({navigation}) => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={SF(24)} color="#333" />
+            <Ionicons name="arrow-back" size={SF(24)} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Subjects</Text>
           <View style={styles.placeholder} />
@@ -205,6 +205,7 @@ const ContentSection = ({navigation}) => {
             placeholderTextColor={'#999'}
             title={translate('Choose subject')}
             placeholder="Select subject"
+            //placeholderTextColor={colors.grey}
             isRight={true}
             rightContent={
               <View>
@@ -265,7 +266,7 @@ const themedStyles =(colors)=> StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: SH(15),
-    height: SH(40), // Reduced header height
+    height: SH(30), // Reduced header height
   },
   backButton: {
     padding: SW(5),
@@ -273,7 +274,7 @@ const themedStyles =(colors)=> StyleSheet.create({
   headerTitle: {
     fontSize: SF(20), // Slightly smaller font
     fontFamily: Fonts.Bold,
-    color: '#333',
+    color: colors.text,
     textAlign: 'center'
   },
   placeholder: {

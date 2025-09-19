@@ -54,7 +54,7 @@ const Input = ({
           onChangeText={text => onChangeHandler(text)}
           onFocus={onFocusHandler}
           placeholder={placeholder}
-          placeholderTextColor={colors.grey}
+          placeholderTextColor={colors.greyInput}
           secureTextEntry={showPassword}
           value={value}
           multiline={isMultiline}

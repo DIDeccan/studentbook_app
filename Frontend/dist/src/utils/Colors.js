@@ -28,12 +28,14 @@ export const lightColors = {
   background: '#FFFFFF',
   text: '#000000',
   primary: '#1976D2',
-  grey:'#e1edfbff'
+  grey:'#e1edfbff',
+  greyInput:'gray'
 };
 
 export const darkColors = {
   background: '#000000',
   text: '#FFFFFF',
   primary: '#90CAF9',
-  grey:'hsla(180, 3%, 53%, 1.00)'
+  grey:'hsla(180, 3%, 53%, 1.00)',
+  greyInput:'gray'
 };

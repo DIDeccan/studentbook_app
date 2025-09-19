@@ -19,6 +19,7 @@ import Slider from '@react-native-community/slider';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { darkColors, lightColors } from '../../utils/Colors';
 import { useSelector } from 'react-redux';
+import { SF, SW } from '../../utils/dimensions';
 
 const { width, height } = Dimensions.get('window');
 
@@ -144,21 +145,6 @@ const CoursePlayerScreen = (props) => {
     }
   }, []);
 
-  // Hide controls after 3 seconds of inactivity
-  // useEffect(() => {
-  //   if (showControls && isPlaying) {
-  //     controlsTimeout.current = setTimeout(() => {
-  //       setShowControls(false);
-  //     }, 3000);
-  //   }
-
-  //   return () => {
-  //     if (controlsTimeout.current) {
-  //       clearTimeout(controlsTimeout.current);
-  //     }
-  //   };
-  // }, [showControls, isPlaying]);
-
   const toggleFavorite = (id) => {
     setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -234,7 +220,6 @@ const CoursePlayerScreen = (props) => {
   };
 
   const openFullScreen = () => {
-    console.log("heloo====098")
       setFullScreenVideo(selectedVideo);
     };
 
@@ -352,7 +337,7 @@ const CoursePlayerScreen = (props) => {
       {!isFullScreen && (
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={()=>{props.navigation.goBack()}}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Programming Course</Text>
           <View style={styles.placeholder} />
@@ -533,15 +518,15 @@ const themedStyles =(colors)=> StyleSheet.create({
     paddingVertical: 12,
  //   backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor:colors.background,
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: SF(18),
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   placeholder: {
     width: 32,
@@ -619,23 +604,24 @@ const themedStyles =(colors)=> StyleSheet.create({
     borderRadius: 20,
   },
   videoInfoPanel: {
-    padding: 16,
+   paddingHorizontal: SW(17),
+    paddingVertical: SW(10),
     //backgroundColor: 'white',
   },
   currentChapter: {
     fontSize: 14,
-    color: '#666',
+    color: colors.text,
     marginBottom: 4,
   },
   videoTitleLarge: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+   color: colors.text,
     marginBottom: 8,
   },
   videoDescriptionLarge: {
     fontSize: 14,
-    color: '#666',
+   color: colors.text,
     lineHeight: 20,
   },
   chaptersList: {
@@ -644,7 +630,7 @@ const themedStyles =(colors)=> StyleSheet.create({
   },
   chapterContainer: {
     marginBottom: 16,
-    backgroundColor: 'white',
+    backgroundColor: colors.grey,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',

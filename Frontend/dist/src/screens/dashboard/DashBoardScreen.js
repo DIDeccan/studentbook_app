@@ -1,10 +1,13 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from "react-native";
 import { BarChart, LineChart } from "react-native-chart-kit";
 import Icon from "react-native-vector-icons/Feather";
 import ContainerComponent from "../../components/commonComponents/Container";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { darkColors, lightColors } from "../../utils/Colors";
+import { getDashBoardData, getDBInterestTopic, getDBWeeklyTrends } from "../../redux/reducer/dashboard";
+import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -12,11 +15,48 @@ const Dashboard = () => {
   const themeMode = useSelector((state) => state.theme.theme);
   let colors = (themeMode === 'dark') ? darkColors : lightColors;
   const styles = themedStyles(colors);
+  const dispatch = useDispatch()
+  const DashBoarduserData = useSelector((state)=> state.dashboard.dashboardGetdata)
+  const DashBoardInterestTopicData = useSelector((state)=> state.dashboard.dashboardInterestTopic)
+  const DashBoardWeeklyData = useSelector((state)=> state.dashboard.dashboardWeekilyTopics)
+    const isFocused = useIsFocused();
+const labelsForInterestTopic = DashBoardInterestTopicData?.subjects.map((subject) => subject.name?.substring(0, 3))
+const dataValuesForInterestTopic = DashBoardInterestTopicData?.subjects.map((subject) => subject.percentage);
+  //console.log(DashBoardWeeklyData,"==========getDas======")
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      let studentId = await AsyncStorage.getItem("studentId");
+      let classId = await AsyncStorage.getItem("classId");
+
+      console.log("studentId:", studentId, "classId:", classId);
+
+      if (studentId && classId) {
+       await Promise.allSettled([
+  dispatch(getDashBoardData({ student_id: studentId, class_id: classId })),
+  dispatch(getDBInterestTopic({ student_id: studentId, class_id: classId })),
+  dispatch(getDBWeeklyTrends({ student_id: studentId, class_id: classId }))
+]);
+      //  console.log("Dashboard API response:", resultAction);
+      } else {
+        console.warn("Missing studentId or classId in AsyncStorage");
+      }
+    };
+
+    if (isFocused) {
+      fetchDashboard();
+    }
+  }, [isFocused, dispatch]);
+
+  //console.log("Dashboard Redux Data:", DashBoarduserData);
+
+
+
+
   return (
     <ContainerComponent>
          <ScrollView style={styles.container}>
-      {/* Header */}
-      <Text style={styles.welcome}>Welcome, Vasu 👋</Text>
+      <Text style={styles.welcome}>Welcome, {DashBoarduserData?.user?.name} 👋</Text>
       <Text style={styles.subHeader}>
         Keep up the great work on your learning journey!
       </Text>
@@ -26,17 +66,17 @@ const Dashboard = () => {
         <View style={styles.card}>
           <Icon name="clock" size={20} color="#6C63FF" />
           <Text style={styles.statTitle}>Total Hours Spent</Text>
-          <Text style={[styles.statValue, { color: "#6C63FF" }]}>34h</Text>
+          <Text style={[styles.statValue, { color: "#6C63FF" }]}>{DashBoarduserData?.stats?.totalHours || 0} h</Text>
         </View>
         <View style={styles.card}>
           <Icon name="check-circle" size={20} color="#00C49F" />
           <Text style={styles.statTitle}>Test Results</Text>
-          <Text style={[styles.statValue, { color: "#00C49F" }]}>82%</Text>
+          <Text style={[styles.statValue, { color: "#00C49F" }]}>{DashBoarduserData?.stats?.averageScore || 0}%</Text>
         </View>
         <View style={styles.card}>
           <Icon name="video" size={20} color="#FF8042" />
           <Text style={styles.statTitle}>Videos Completed</Text>
-          <Text style={[styles.statValue, { color: "#FF8042" }]}>14</Text>
+          <Text style={[styles.statValue, { color: "#FF8042" }]}>{DashBoarduserData?.stats?.videosCompleted || 0}</Text>
         </View>
       </View>
 
@@ -44,17 +84,17 @@ const Dashboard = () => {
         <View style={styles.card}>
           <Icon name="calendar" size={20} color="#00C49F" />
           <Text style={styles.statTitle}>Weekly Hours</Text>
-          <Text style={[styles.statValue, { color: "#00C49F" }]}>12h</Text>
+          <Text style={[styles.statValue, { color: "#00C49F" }]}>{DashBoarduserData?.stats?.weeklyHours || 0}</Text>
         </View>
         <View style={styles.card}>
           <Icon name="book-open" size={20} color="#0088FE" />
           <Text style={styles.statTitle}>Attend Assignments</Text>
-          <Text style={[styles.statValue, { color: "#0088FE" }]}>18h</Text>
+          <Text style={[styles.statValue, { color: "#0088FE" }]}>{DashBoarduserData?.stats?.attendedAssignments || 0}</Text>
         </View>
         <View style={styles.card}>
           <Icon name="alert-circle" size={20} color="#FF0000" />
           <Text style={styles.statTitle}>Pending Assignments</Text>
-          <Text style={[styles.statValue, { color: "#FF0000" }]}>18h</Text>
+          <Text style={[styles.statValue, { color: "#FF0000" }]}>{DashBoarduserData?.stats?.pendingAssignments || 0}</Text>
         </View>
       </View>
 
@@ -62,10 +102,10 @@ const Dashboard = () => {
       <Text style={styles.chartTitle}>Topic you are interested in</Text>
       <BarChart
         data={{
-          labels: ["English", "Maths", "Science", "Social", "Telugu", "Yoga", "Sport", "Health"],
+          labels: labelsForInterestTopic,
           datasets: [
             {
-              data: [35, 20, 15, 12, 10, 9, 9, 9],
+              data: dataValuesForInterestTopic,
             },
           ],
         }}
