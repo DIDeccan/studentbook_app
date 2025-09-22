@@ -90,7 +90,7 @@ const LandingPage = ({ navigation }) => {
   const dispatch = useDispatch();
   const DemoData = useSelector(state => state.demoData.getDemoVideosData);
   const [fullScreenVideo, setFullScreenVideo] = useState(null);
-
+console.log(DemoData,"====demo====")
   const GotoLogin = () => {
     navigation.navigate('LoginScreen');
   };
