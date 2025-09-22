@@ -222,10 +222,29 @@ class ClassWIthSubjectsView(APIView):
         )
 
 
-class ChaptersWithSubchaptersAPI(APIView):
+class SubjectVediosView(APIView):
  
-    def get(self, request, course_id, subject_id):
-        chapters = Chapter.objects.filter(course_id=course_id, subject_id=subject_id).order_by("chapter_number")
+    def get(self, request,student_id, class_id, subject_id):
+
+        student_class = Class.objects.get(id=class_id)
+        if not student_class:   
+            return api_response(
+                message="Class not found",
+                message_type="error",
+                status_code=status.HTTP_404_NOT_FOUND
+                        )
+        try:
+            student = Student.objects.get(id=student_id, student_class=class_id)
+        except Student.DoesNotExist:
+            return api_response(
+                message="Student not found",
+                message_type="error",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+
+        chapters = Chapter.objects.filter(course_id=class_id, subject_id=subject_id).order_by("chapter_number")
+    
         data = []
         for chapter in chapters:
             subchapters = Subchapter.objects.filter(chapter=chapter).order_by("subchapter")
