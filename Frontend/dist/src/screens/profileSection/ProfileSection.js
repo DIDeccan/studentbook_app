@@ -38,8 +38,10 @@ const isFocused = useIsFocused();
 
 
   const app = async () => {
-     let studentId = await AsyncStorage.getItem('studentId')
-    let classId = await AsyncStorage.getItem('classId')
+     let storedId = await AsyncStorage.getItem('studentId')
+    let classid = await AsyncStorage.getItem('classId')
+    const studentId = storedId ? JSON.parse(storedId) : null; 
+      const classId = storedId ? JSON.parse(classid) : null; 
         dispatch(getProfile({ student_id: studentId, class_id: classId}))
         setProfileImage(getProfileData?.profile_image);
       let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
@@ -97,9 +99,13 @@ const handleConfirmLogout = async () => {
     navigation.navigate('SettingScreen')
   }
 
-  const imageUri = profileImage
-  ? `${baseURL}${profileImage}`
-  : "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg";
+  const imageUri = profileImage && profileImage.startsWith('file')
+                    ? profileImage // picked from camera/gallery
+                    : profileImage
+                      ? baseURL + profileImage // from backend
+                      : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='
+  
+
   return (
     <>
       <ContainerComponent>``

@@ -15,6 +15,9 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AmazonAdsCarousel from '../../components/commonComponents/AmazonAdsCard';
 import LinearGradient from 'react-native-linear-gradient';
 import HalfWatchedVideos from '../../components/commonComponents/HalfWatchedVideos';
+import { MainContentHome } from '../../redux/reducer/demopagereduce';
+import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,6 +25,32 @@ const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const themeMode = useSelector(state => state.theme.theme);
   const colors = themeMode === 'dark' ? darkColors : lightColors;
+  const Contentdata = useSelector((state)=> state.demoData.mainContentData)
+  console.log(Contentdata,"==============content====")
+  const isFocused = useIsFocused();
+
+    useEffect(() => {
+    const fetchDashboard = async () => {
+      // let studentId = await AsyncStorage.getItem("studentId");
+      // let classId = await AsyncStorage.getItem("classId");
+     let storedId = await AsyncStorage.getItem('studentId')
+    let classid = await AsyncStorage.getItem('classId')
+    const studentId = storedId ? JSON.parse(storedId) : null; 
+      const classId = storedId ? JSON.parse(classid) : null; 
+      console.log("studentId:", studentId, "classId:", classId);
+
+      if (studentId && classId) {
+  let  resultAction = await dispatch(MainContentHome({ student_id: studentId, class_id: classId }))
+        console.log("Dashboard API response:", resultAction);
+   } else {
+        console.warn("Missing studentId or classId in AsyncStorage");
+      }
+    };
+
+    if (isFocused) {
+      fetchDashboard();
+    }
+  }, [isFocused, dispatch]);
 
   const ContentData = [
     {

@@ -225,11 +225,18 @@ const SignUpScreen = ({ navigation }) => {
                 razorpay_signature: data.razorpay_signature,
               })
             ).unwrap();
-  setOtpSuccessPopup(false)
+    if (result.message_type === "success") {
+  await AsyncStorage.setItem("studentId", String(result?.data?.student_id));
+  await AsyncStorage.setItem("classId", String(result?.data?.classId_id));
+    setOtpSuccessPopup(false)
             console.log("Payment Verify :", result);
-          await AsyncStorage.setItem("studentId",result?.data?.student_id)
-          await AsyncStorage.setItem("classId",result?.data?.class_id)
+          // await AsyncStorage.setItem("studentId",result?.data?.student_id.toString())
+          // await AsyncStorage.setItem("classId",result?.data?.class_id.toString())
   navigation.navigate('BottomTabNavigations');
+
+  console.log("✅ Stored successfully");
+}
+
           
             Alert.alert(
               "Payment Verification",
@@ -708,7 +715,7 @@ const themedStyles = colors =>
     textItem: {
       flex: 1,
       fontSize: 16,
-      color: colors.background,
+      color: colors.text,
     },
     placeholderStyle: {
       fontSize: 16,
@@ -725,7 +732,7 @@ const themedStyles = colors =>
     inputSearchStyle: {
       height: 40,
       fontSize: 16,
-      color:colors.background
+      color:colors.text
     },
     loaderOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -742,7 +749,7 @@ const themedStyles = colors =>
     },
     modalContent: {
       width: '90%',
-      backgroundColor:colors.text,
+      backgroundColor:colors.background,
       padding: 20,
       borderRadius: 12,
     },

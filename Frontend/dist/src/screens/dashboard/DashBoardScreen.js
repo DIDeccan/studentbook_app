@@ -20,8 +20,8 @@ const Dashboard = () => {
   const DashBoardInterestTopicData = useSelector((state)=> state.dashboard.dashboardInterestTopic)
   const DashBoardWeeklyData = useSelector((state)=> state.dashboard.dashboardWeekilyTopics)
     const isFocused = useIsFocused();
-const labelsForInterestTopic = DashBoardInterestTopicData?.subjects.map((subject) => subject.name?.substring(0, 3))
-const dataValuesForInterestTopic = DashBoardInterestTopicData?.subjects.map((subject) => subject.percentage);
+const labelsForInterestTopic = (DashBoardInterestTopicData && DashBoardInterestTopicData?.subjects?.map((subject) => subject?.name?.substring(0, 3)))
+const dataValuesForInterestTopic = (DashBoardInterestTopicData && DashBoardInterestTopicData?.subjects?.map((subject) => subject?.percentage));
   //console.log(DashBoardWeeklyData,"==========getDas======")
 
   useEffect(() => {
