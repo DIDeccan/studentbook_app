@@ -44,7 +44,7 @@ class MainContentView(APIView):
             "Sports": "secondary",
             }
         data = []
-        general_contents = GeneralContent.objects.all()
+        general_contents = MainContent.objects.all()
 
         for content in general_contents:
             content_data = {
@@ -219,3 +219,38 @@ class ClassWIthSubjectsView(APIView):
             status_code=status.HTTP_200_OK,
             data=data
         )
+
+
+class ChaptersWithSubchaptersAPI(APIView):
+ 
+    def get(self, request, course_id, subject_id):
+        chapters = Chapter.objects.filter(course_id=course_id, subject_id=subject_id).order_by("chapter_number")
+        data = []
+        for chapter in chapters:
+            subchapters = Subchapter.objects.filter(chapter=chapter).order_by("subchapter")
+            subchapter_data = [
+                {
+ 
+                    "id": sub.id,
+                    "subchapter": sub.subchapter,
+                    "video_name": sub.video_name,
+                    "video_url": sub.video_url,
+                    "video_duration": sub.vedio_duration,
+                    "created_at":sub.created_at
+                }
+                for sub in subchapters
+            ]
+            data.append({
+                "chapter_id": chapter.id,
+                "chapter_name": chapter.chapter_name,
+                "chapter_number": chapter.chapter_number,
+                "subject": chapter.subject.name,
+                "subject_id": chapter.subject.id,
+                "class": chapter.course.name,
+                "subchapters": subchapter_data
+            })
+ 
+        return Response(data, status=200)
+ 
+ 
+ 
