@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SF, SH, SW } from '../../utils/dimensions';
 import ContainerComponent from '../../components/commonComponents/Container';
 import Fonts from '../../utils/Fonts';
@@ -17,92 +17,54 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { darkColors, lightColors } from '../../utils/Colors';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SubjectsApi } from '../../redux/reducer/demopagereduce';
 
-const ContentSection = ({navigation}) => {
+const ContentSection = ({ navigation }) => {
   const themeMode = useSelector((state) => state.theme.theme);
   let colors = (themeMode === 'dark') ? darkColors : lightColors;
   const styles = themedStyles(colors);
   const [search, setSearch] = useState('');
   const [chooseClass, setChooseClass] = useState(false);
   const [classDrop, setClassDrop] = useState(false);
-  const [passVisible, setPassVisible] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('');
-  
-  const subjectsData = [
-    {
-      id: 1,
-      name: 'Maths',
-      content: 'Algebra, Geometry, Calculus and more',
-      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpnXo9SnQvJio9aZsMqeFRvUjMpF5GKFo1eKS1k66mgHe7LPk6AiXCPr5yZ3Q9frNnpbo&usqp=CAU',
-      class: 6,
-      icon: 'calculator',
-      progressPercentage: 30,
-      color: '#FF6B6B'
-    },
-    {
-      id: 2,
-      name: 'English',
-      content: 'Grammar, Literature, Writing skills',
-      image: 'https://media.istockphoto.com/id/511281043/photo/multiethnic-group-of-children-and-english-concept.jpg?s=612x612&w=0&k=20&c=BHz06Gw0Ef4C1UI8SpFzAiu3F50XZbQWlSveh0BEn1E=',
-      class: 6,
-      icon: 'book',
-      progressPercentage: 65,
-      color: '#4ECDC4'
-    },
-    {
-      id: 3,
-      name: 'Telugu',
-      content: 'Language, Poetry, Literature',
-      image: 'https://img.freepik.com/free-vector/abstract-hand-drawn-telugu-diwali-card_23-2148815778.jpg',
-      class: 6,
-      icon: 'language',
-      progressPercentage: 20,
-      color: '#FFD166'
-    },
-    {
-      id: 4,
-      name: 'Science',
-      content: 'Physics, Chemistry, Biology',
-      image: 'https://img.freepik.com/free-vector/science-word-theme_23-2148540555.jpg',
-      class: 6,
-      icon: 'flask',
-      progressPercentage: 45,
-      color: '#06D6A0'
-    },
-    {
-      id: 5,
-      name: 'History',
-      content: 'Ancient, Medieval, Modern history',
-      image: 'https://img.freepik.com/free-vector/hand-drawn-history-background_23-2148832292.jpg',
-      class: 6,
-      icon: 'hourglass',
-      progressPercentage: 80,
-      color: '#118AB2'
-    },
-    {
-      id: 6,
-      name: 'Hindi',
-      content: 'Grammar, Literature, Writing',
-      image: 'https://img.freepik.com/free-vector/hand-painted-hindi-diwali-card_23-2148806848.jpg',
-      class: 6,
-      icon: 'pen',
-      progressPercentage: 55,
-      color: '#073B4C'
-    },
-  ];
-  
-  const dropdownSubjects = [{ name: 'All' }, ...subjectsData];
+  const dispatch = useDispatch();
+  const isFocused = useIsFocused();
+  const SubjectsList = useSelector((state) => state.demoData.subjectsData)
+
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      let storedId = await AsyncStorage.getItem('studentId')
+      let classid = await AsyncStorage.getItem('classId')
+      const studentId = storedId ? JSON.parse(storedId) : null;
+      const classId = classid ? JSON.parse(classid) : null;
+      if (studentId && classId) {
+        let resultAction = await dispatch(SubjectsApi({ student_id: studentId, class_id: classId }))
+        console.log("Dashboard API response:", JSON.stringify(resultAction, null, 2));
+      } else {
+        console.warn("Missing studentId or classId in AsyncStorage");
+      }
+    };
+    if (isFocused) {
+      fetchDashboard();
+    }
+  }, [isFocused, dispatch]);
+  const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
+
+  const dropdownSubjects = [{ name: 'All' }, ...SubjectsList];
 
   const ClassDropDown = () => {
     setClassDrop(!classDrop);
   };
-  
+
   const selectSubject = (subject) => {
     // Navigate to specific subject based on selection
     navigation.navigate(`${subject.name}Subject`);
   };
-  
+
   const chooseClasses = (item) => {
     if (item.name === 'All') {
       setSelectedSubject('');  // Clear filter
@@ -112,7 +74,7 @@ const ContentSection = ({navigation}) => {
     setChooseClass(item.name);
     setClassDrop(false);
   };
-  
+
   const renderSections = ({ item }) => {
     return (
       <TouchableOpacity
@@ -124,21 +86,21 @@ const ContentSection = ({navigation}) => {
     );
   };
 
-  const filterData = subjectsData.filter((i) =>
+  const filterData = SubjectsList.filter((i) =>
     selectedSubject === '' ? true : i.name.toLowerCase() === selectedSubject.toLowerCase()
   );
-  
+
   const renderSubjectCard = ({ item }) => {
     return (
-      <TouchableOpacity 
-        onPress={() => selectSubject(item)} 
+      <TouchableOpacity
+        onPress={() => selectSubject(item)}
         style={styles.subjectCard}
       >
         <LinearGradient
           colors={[item.color, `${item.color}80`]}
           style={styles.cardHeader}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
         >
           <View style={styles.cardTitleContainer}>
             <Ionicons name={item.icon} size={SF(20)} color="white" />
@@ -146,36 +108,36 @@ const ContentSection = ({navigation}) => {
           </View>
           <Text style={styles.classText}>Class {item.class}</Text>
         </LinearGradient>
-        
-        <Image source={{ uri: item.image }} style={styles.subjectImage} />
-        
+
+        <Image source={{ uri: item.image || PlaceHolderImage }} style={styles.subjectImage} />
+
         <View style={styles.cardContent}>
           <Text style={styles.subjectDescription}>{item.content}</Text>
-          
+
           <View style={styles.progressContainer}>
             <View style={styles.progressLabels}>
               <Text style={styles.progressText}>Progress</Text>
               <Text style={styles.percentageText}>{item.progressPercentage}%</Text>
             </View>
-            
+
             <View style={styles.progressBar}>
-              <View 
+              <View
                 style={[
-                  styles.progressFill, 
-                  { 
+                  styles.progressFill,
+                  {
                     width: `${item.progressPercentage}%`,
                     backgroundColor: item.color
                   }
-                ]} 
+                ]}
               />
             </View>
           </View>
-          
+
           <LinearGradient
             colors={['rgba(254,238,245,1)', 'rgba(223,238,255,1)']}
             style={styles.actionButton}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
           >
             <Text style={styles.actionButtonText}>Continue Learning</Text>
             <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
@@ -184,13 +146,13 @@ const ContentSection = ({navigation}) => {
       </TouchableOpacity>
     );
   };
-   
+
   return (
     <ContainerComponent>
       <View style={styles.container}>
         {/* Header with reduced height and back button */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -199,7 +161,7 @@ const ContentSection = ({navigation}) => {
           <Text style={styles.headerTitle}>My Subjects</Text>
           <View style={styles.placeholder} />
         </View>
-        
+
         <View style={styles.filterContainer}>
           <Input
             placeholderTextColor={'#999'}
@@ -226,7 +188,7 @@ const ContentSection = ({navigation}) => {
               pointerEvents: 'none',
             }}
           />
-          
+
           {classDrop && (
             <View style={styles.countryCodeDrop}>
               <FlatList
@@ -238,7 +200,7 @@ const ContentSection = ({navigation}) => {
             </View>
           )}
         </View>
-    
+
         <FlatList
           showsVerticalScrollIndicator={false}
           data={filterData}
@@ -253,12 +215,11 @@ const ContentSection = ({navigation}) => {
 
 export default ContentSection;
 
-const themedStyles =(colors)=> StyleSheet.create({
+const themedStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SW(15),
     paddingTop: SH(10),
-    //backgroundColor: '#F8F9FA'
   },
   // Header with reduced height
   header: {

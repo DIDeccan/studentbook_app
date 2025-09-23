@@ -26,82 +26,65 @@ const HomeScreen = ({ navigation }) => {
   const themeMode = useSelector(state => state.theme.theme);
   const colors = themeMode === 'dark' ? darkColors : lightColors;
   const Contentdata = useSelector((state)=> state.demoData.mainContentData)
-  console.log(Contentdata,"==============content====")
+//  console.log(Contentdata,"==============content====")
   const isFocused = useIsFocused();
 
-    useEffect(() => {
-    const fetchDashboard = async () => {
-      // let studentId = await AsyncStorage.getItem("studentId");
-      // let classId = await AsyncStorage.getItem("classId");
-     let storedId = await AsyncStorage.getItem('studentId')
+useEffect(() => {
+  const fetchDashboard = async () => {  
+    let storedId = await AsyncStorage.getItem('studentId')
     let classid = await AsyncStorage.getItem('classId')
+
     const studentId = storedId ? JSON.parse(storedId) : null; 
-      const classId = storedId ? JSON.parse(classid) : null; 
-      console.log("studentId:", studentId, "classId:", classId);
-
-      if (studentId && classId) {
-  let  resultAction = await dispatch(MainContentHome({ student_id: studentId, class_id: classId }))
-        console.log("Dashboard API response:", resultAction);
-   } else {
-        console.warn("Missing studentId or classId in AsyncStorage");
-      }
-    };
-
-    if (isFocused) {
-      fetchDashboard();
+    const classId = classid ? JSON.parse(classid) : null; 
+    if (studentId && classId) {
+      let resultAction = await dispatch(MainContentHome({ student_id: studentId, class_id: classId }))
+    } else {
+      console.warn("Missing studentId or classId in AsyncStorage");
     }
-  }, [isFocused, dispatch]);
+  };
+  if (isFocused) {
+    fetchDashboard();
+  }
+}, [isFocused, dispatch]);
 
-  const ContentData = [
-    {
-      id: 1,
-      name: 'My Subjects',
-      image: 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Ym9va3xlbnwwfHwwfHx8MA%3D%3D',
-      icon: 'book',
-    },
-    {
-      id: 2,
-      name: 'Yoga Tips',
-      image: 'https://thumbs.dreamstime.com/b/yoga-woman-doing-sunset-32549843.jpg',
-      icon: 'self-improvement',
-    },
-    {
-      id: 3,
-      name: 'Sports Tips',
-      image: 'https://t3.ftcdn.net/jpg/02/87/04/00/360_F_287040077_U2ckmhpzeyqDHiybj0dfCfX6NRCEKdoe.jpg',
-      icon: 'sports-basketball',
-    },
-    {
-      id: 4,
-      name: 'Health Tips',
-      image: 'https://media.istockphoto.com/id/1473675453/photo/well-balanced-diet-and-blood-pressure-control-for-heart-care.jpg?s=612x612&w=0&k=20&c=XUxCIyfmz0YaDzBYY486omFNG80QyHprkFcjw1bMVsg=',
-      icon: 'favorite',
-    },
-    {
-      id: 5,
-      name: 'Current Affairs',
-      image: 'https://www.edudwar.com/wp-content/uploads/2021/08/daily-current-affairs.jpg',
-      icon: 'article',
-    },
-    {
-      id: 6,
-      name: 'Study Materials',
-      image: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHN0dWR5fGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      icon: 'menu-book',
-    },
-  ];
+  // useEffect(() => {
+  //   const fetch = async () => {
+  //     let studentId = await AsyncStorage.getItem('studentId')
+  //     let classId = await AsyncStorage.getItem('classId')
+  //     setClassId(studentId)
+  //     setClassId(classId)
+  //     dispatch(getProfile({ student_id: studentId, class_id: classId }))
+  //   };
+  //   fetch();
+  // }, [dispatch]);
 
   const contentSelection = (item) => {
-    //navigation.navigate('ContentSection');
-  if (item.id === 1) {
+  if (item.name === "My Subjects") {
     navigation.navigate("ContentSection", { item });
-  } else if (item.id === 2) {
+  } else if (item.name === "Yoga Tips") {
     navigation.navigate("YogaVideos", { item });
   } else {
     navigation.navigate("HealthTips", { item });
   }
   };
 
+const getIconName = (item) => {
+  if (item.name === "My Subjects") {
+    return "menu-book";
+  } else if (item.name === "Yoga Tips") {
+    return "self-improvement";
+  } else if (item.name === "Sports") {
+    return "sports-basketball";
+    } else if (item.name === "Healthy Living") {
+    return "favorite";
+    } else if (item.name === "Current Affairs") {
+    return "article";
+  } else {
+    return "book"; // default fallback icon
+  }
+};
+
+const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
   const renderContentItem = ({ item }) => {
     return (
       <TouchableOpacity 
@@ -111,7 +94,7 @@ const HomeScreen = ({ navigation }) => {
       >
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: item.image || PlaceHolderImage }}
             style={styles.contentImage}
           />
           <LinearGradient
@@ -119,7 +102,7 @@ const HomeScreen = ({ navigation }) => {
             style={styles.imageGradient}
           />
           <View style={styles.iconContainer}>
-            <MaterialIcons name={item.icon} size={24} color="white" />
+             <MaterialIcons name={getIconName(item)} size={20} color="white" />
           </View>
         </View>
         <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
@@ -211,7 +194,7 @@ const HomeScreen = ({ navigation }) => {
             <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
-              data={ContentData}
+              data={Contentdata}
               renderItem={renderContentItem}
               keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.contentList}

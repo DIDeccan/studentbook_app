@@ -61,15 +61,9 @@ const LoginScreen = props => {
 await AsyncStorage.setItem("refresh_token", login.refresh);
 await AsyncStorage.setItem("studentId"   ,String(login?.student_id))
 await AsyncStorage.setItem("classId",String(login?.class_id))
+await AsyncStorage.setItem("isPaid", JSON.stringify(login.is_paid))
 //await AsyncStorage.setItem("refresh_token", login.refresh);
-  let stent =        await AsyncStorage.getItem("studentId")
-  const classId =    await AsyncStorage.getItem("classId")
-const acc = await AsyncStorage.getItem("access_token");
-const ref = await AsyncStorage.getItem("refresh_token");
-console.log("accc===", acc);
-console.log("ref===", ref);
-console.log("accc=11==", stent);
-console.log("ref22===", classId);
+
 
    Alert.alert("Success", login.message || "Login successful", [
   { text: "OK", onPress: () =>  props.navigation.replace('BottomTabNavigations')}

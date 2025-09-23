@@ -23,6 +23,7 @@ if(access !== null && isPaid == 'true'){
   useEffect(()=>{
     intialPage()
     })
+    
    useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('SwipperScreen');
@@ -39,7 +40,7 @@ if(access !== null && isPaid == 'true'){
             resizeMode="contain"
             source={Spalsh_Logo1}
           />
-          <Text style={{fontSize:SF(20),textAlign:'center'}}>Student Book</Text>
+          {/* <Text style={{fontSize:SF(20),textAlign:'center'}}>Student Book</Text> */}
         </View>
       </View>
     </ContainerComponent>

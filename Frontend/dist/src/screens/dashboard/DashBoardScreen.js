@@ -20,10 +20,32 @@ const Dashboard = () => {
   const DashBoardInterestTopicData = useSelector((state)=> state.dashboard.dashboardInterestTopic)
   const DashBoardWeeklyData = useSelector((state)=> state.dashboard.dashboardWeekilyTopics)
     const isFocused = useIsFocused();
-const labelsForInterestTopic = (DashBoardInterestTopicData && DashBoardInterestTopicData?.subjects?.map((subject) => subject?.name?.substring(0, 3)))
-const dataValuesForInterestTopic = (DashBoardInterestTopicData && DashBoardInterestTopicData?.subjects?.map((subject) => subject?.percentage));
-  //console.log(DashBoardWeeklyData,"==========getDas======")
+const labelsForInterestTopic =
+  DashBoardInterestTopicData?.subjects?.map((subject) => subject?.name?.substring(0, 3)) || [];
 
+const dataValuesForInterestTopic =
+  DashBoardInterestTopicData?.subjects?.map((subject) => subject?.percentage) || [];
+
+ const subjects =
+  Object.keys(DashBoardWeeklyData?.days?.Sunday || {}).map(
+    (subj) => subj.substring(0, 3) // only first 3 letters
+  );
+  const weekDays = Object.keys(DashBoardWeeklyData?.days || {});
+const weekLabels = weekDays.map((day) => day.substring(0, 3));
+
+  const chartColors = ["#6C63FF", "#0088FE", "#00C49F", "#FF8042", "#FF0000", "#AA00FF", "#FFAA00"];
+
+const datasets = weekDays?.map((day, idx) => ({
+  data: Object?.values(DashBoardWeeklyData?.days?.[day] || {}),
+  color: () => chartColors[idx % chartColors.length],
+}));
+
+const weeklyChartData = {
+  labels: subjects,   
+  datasets: datasets,
+  legend: weekLabels, 
+};
+ 
   useEffect(() => {
     const fetchDashboard = async () => {
       let studentId = await AsyncStorage.getItem("studentId");
@@ -37,7 +59,6 @@ const dataValuesForInterestTopic = (DashBoardInterestTopicData && DashBoardInter
   dispatch(getDBInterestTopic({ student_id: studentId, class_id: classId })),
   dispatch(getDBWeeklyTrends({ student_id: studentId, class_id: classId }))
 ]);
-      //  console.log("Dashboard API response:", resultAction);
       } else {
         console.warn("Missing studentId or classId in AsyncStorage");
       }
@@ -47,11 +68,6 @@ const dataValuesForInterestTopic = (DashBoardInterestTopicData && DashBoardInter
       fetchDashboard();
     }
   }, [isFocused, dispatch]);
-
-  //console.log("Dashboard Redux Data:", DashBoarduserData);
-
-
-
 
   return (
     <ContainerComponent>
@@ -124,42 +140,21 @@ const dataValuesForInterestTopic = (DashBoardInterestTopicData && DashBoardInter
 
       {/* Line Chart */}
       <Text style={styles.chartTitle}>Weekly Learning Trends</Text>
-      <LineChart
-        data={{
-          labels: ["Telugu", "English", "Maths", "Science", "Social", "Hindi"],
-          datasets: [
-            {
-              data: [50, 200, 150, 300, 180, 250],
-              color: () => "#6C63FF", // Saturday
-            },
-            {
-              data: [40, 100, 90, 120, 110, 140],
-              color: () => "#0088FE", // Friday
-            },
-            {
-              data: [20, 80, 60, 100, 90, 120],
-              color: () => "#00C49F", // Monday
-            },
-            {
-              data: [10, 60, 40, 80, 70, 100],
-              color: () => "#FF8042", // Wednesday
-            },
-          ],
-          legend: ["Saturday", "Friday", "Monday", "Wednesday"],
-        }}
-        width={screenWidth - 20}
-        height={250}
-        chartConfig={{
-          backgroundColor: "#fff",
-          backgroundGradientFrom: "#fff",
-          backgroundGradientTo: "#fff",
-          decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-          labelColor: () => "#333",
-        }}
-        bezier
-        style={styles.chart}
-      />
+   <LineChart
+  data={weeklyChartData}
+  width={screenWidth - 20}
+  height={250}
+  chartConfig={{
+    backgroundColor: "#fff",
+    backgroundGradientFrom: "#fff",
+    backgroundGradientTo: "#fff",
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+    labelColor: () => "#333",
+  }}
+  bezier
+  style={styles.chart}
+/>
     </ScrollView>
     </ContainerComponent>
  
@@ -169,7 +164,6 @@ const dataValuesForInterestTopic = (DashBoardInterestTopicData && DashBoardInter
 const themedStyles =(colors)=> StyleSheet.create({
   container: {
     flex: 1,
-   // backgroundColor: "",
     padding: 10,
   },
   welcome: {

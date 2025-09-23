@@ -5,42 +5,67 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const api = axios.create({
     baseURL,
 });
-
+//console.log(baseURL,"ppppppppp")
 api.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log("error======123");
       originalRequest._retry = true;
 
       try {
-        // Get refresh token from storage
+        // 🔑 Get tokens from storage
         const refreshToken = await AsyncStorage.getItem("refresh_token");
+        const oldAccessToken = await AsyncStorage.getItem("access_token");
 
-        // Call refresh token API
-        const res = await axios.post(endpoints.REFRESH_TOKEN, {
-          refresh_token: refreshToken,
-        });
+        if (!refreshToken || !oldAccessToken) {
+          return Promise.reject(error); // no tokens → logout
+        }
 
-        const newAccessToken = res.data.access_token;
+        // 🔑 Call refresh API
+        const res = await axios.post(
+          endpoints.REFRESH_TOKEN,
+          { refresh: refreshToken }, // payload
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${oldAccessToken}`, // previous access token
+            },
+          }
+        );
 
-        // Save new token
+        console.log("Refresh API response:", res.data);
+
+        // ✅ Correct response path
+        const newAccessToken = res.data.data.access;
+        const newRefreshToken = res.data.data.refresh;
+
+        // 🔑 Save new tokens
         await AsyncStorage.setItem("access_token", newAccessToken);
+        if (newRefreshToken) {
+          await AsyncStorage.setItem("refresh_token", newRefreshToken);
+        }
 
-        // Update header & retry the request
+        // 🔑 Retry original request with new access token
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return api(originalRequest);
-
       } catch (refreshError) {
-        // Refresh failed → logout user
-        console.log("Refresh token failed", refreshError);
-        // handle logout
+        console.log("Refresh token failed:", {
+          status: refreshError.response?.status,
+          data: refreshError.response?.data,
+          message: refreshError.message,
+        });
+        return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
   }
 );
+
+
 
 export default api;

@@ -165,8 +165,8 @@ builder.addCase(getDemoData.rejected, (state, action: any) => {
     });
     builder.addCase(MainContentHome.fulfilled, (state, action) => {
       state.loading = false;
-      state.mainContentData = action.payload?.data;
-      console.log(state.mainContentData,"=====================dashboardGetdata==========")
+      state.mainContentData = action.payload?.data.content;
+      //console.log(state.mainContentData,"=====================dashboardGetdata==========")
       state.message = 'Profile fetched successfully';
     });
     builder.addCase(MainContentHome.rejected, (state, action: any) => {
