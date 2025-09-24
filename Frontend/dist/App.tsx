@@ -6,6 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import ContainerComponent from './src/components/commonComponents/Container';
 import store from './src/redux/store/store';
 import { Provider } from 'react-redux';
+import Toast from "react-native-toast-message"; 
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
         <NavigationContainer>
           <Navigations />
         </NavigationContainer>
+          <Toast position="top" visibilityTime={3000} />
       </SafeAreaView>
     </SafeAreaProvider>
     </ContainerComponent>

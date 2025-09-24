@@ -5,20 +5,31 @@ from datetime import timedelta
 from smart_selects.db_fields import ChainedForeignKey
 import datetime
 from storages.backends.s3boto3 import S3Boto3Storage
+from django.db import transaction
+from django.db import IntegrityError
 
 def generate_transaction_id():
-    today = datetime.date.today().strftime("%Y%m%d")  # e.g. 20250903
-    last_order = SubscriptionOrder.objects.filter(
-        transaction_id__startswith=f"TXN{today}"
-    ).order_by("id").last()
+    today = datetime.date.today().strftime("%Y%m%d")
+    prefix = f"TXN{today}"
 
-    if last_order and last_order.transaction_id:
-        last_number = int(last_order.transaction_id[-4:])  # last 4 digits
-        new_number = last_number + 1
-    else:
-        new_number = 1
+    with transaction.atomic():
+        last_order = (
+            SubscriptionOrder.objects
+            .select_for_update()   # 🔒 locks matching rows
+            .filter(transaction_id__startswith=prefix)
+            .order_by("id")
+            .last()
+        )
 
-    return f"TXN{today}{new_number:04d}"
+        if last_order and last_order.transaction_id:
+            last_number = int(last_order.transaction_id[-4:])
+            new_number = last_number + 1
+        else:
+            new_number = 1
+
+        return f"{prefix}{new_number:04d}"
+
+
 # Create your models here.
 
 
@@ -33,6 +44,10 @@ class School(models.Model):
 class Class(models.Model):
     name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=2000)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # e.g. 10.00 for 10%
+    final_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
+    created_at = models.DateField(auto_now_add=True,null=True,blank=True)
+    updated_at = models.DateField(auto_now=True,null=True,blank=True)
     description = models.TextField(blank=True, null=True)
     def __str__(self):
         return self.name
@@ -205,12 +220,19 @@ class SubscriptionOrder(models.Model):
         Automatically set subscription_end to 1 year (365 days) after
         subscription_start if not provided manually.
         """
-        if not self.transaction_id:  # only generate if missing
-            self.transaction_id = generate_transaction_id()
-
+        if not self.transaction_id:
+            for _ in range(3):  # retry max 3 times
+                try:
+                    self.transaction_id = generate_transaction_id()
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    self.transaction_id = None  # reset and retry
+            raise
         if not self.subscription_end:
             self.subscription_end = self.subscription_start + timedelta(days=365)
         super().save(*args, **kwargs)
+
 
     @property
     def is_paid(self) -> bool:
@@ -286,10 +308,8 @@ class Subchapter(models.Model):
     parent_subchapter = models.CharField(max_length=50, blank=True)
     course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='subchapter')
     subject = ChainedForeignKey(Subject, chained_field="course",chained_model_field="course" ,on_delete=models.CASCADE, related_name="subchapter")
-    # semester = ChainedForeignKey(Semester,chained_field="subject",chained_model_field="subject", on_delete=models.CASCADE, related_name='subchapter')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='subchapter')
-    # chapter = ChainedForeignKey(Chapter, chained_field="subject",chained_model_field="subject" ,on_delete=models.CASCADE, related_name='subchapter')
-    chapter = models.ForeignKey(Chapter, on_delete=models.SET_NULL, null=True, blank=True)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, null=True, blank=True)
     video_name = models.CharField(max_length=255)
     video_url = models.URLField()   # final S3/CloudFront URL
     vedio_duration = models.CharField(max_length=50, blank=True, null=True)  # e.g. "15:30"
@@ -317,7 +337,7 @@ class Subchapter(models.Model):
         return f"{self.video_name} (Class {self.course}, Subject {self.subject})"
 
 
-class GeneralContent(models.Model):
+class MainContent(models.Model):
     """
     Represents general content that can be associated with a Yoga, Sports, GK etc.
     Stores content title, description, optional file attachment, and links to its related entities.

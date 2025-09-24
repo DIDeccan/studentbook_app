@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, Image } from 'react-native';
 import React,{useEffect} from 'react';
 import { SW, SH, SF } from '../../utils/dimensions';
-import { loginImg, Spalsh_Logo, Spalsh_Logo1 } from '../../images/index.js';
+import { loginImg, logoImg, Spalsh_Logo, Spalsh_Logo1 } from '../../images/index.js';
 import ContainerComponent from '../../components/commonComponents/Container.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSelector } from 'react-redux';
@@ -38,7 +38,7 @@ if(access !== null && isPaid == 'true'){
           <Image
             style={styles.valuxlogoimg}
             resizeMode="contain"
-            source={Spalsh_Logo1}
+            source={logoImg}
           />
           {/* <Text style={{fontSize:SF(20),textAlign:'center'}}>Student Book</Text> */}
         </View>

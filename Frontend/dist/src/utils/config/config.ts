@@ -1,4 +1,4 @@
-export const baseURL = 'http://192.168.0.19:8000/';
+export const baseURL = 'http://192.168.0.10:8000/';
 export const endpoints = {
   SIGN_UP: 'student-register',
   LOGIN: 'login',
@@ -18,6 +18,6 @@ export const endpoints = {
   DASHBOARD_WEEKLY_TRENDS:"dashboard/weekly_trends",
   MAIN_CONTENT:"maincontent",
   SUBJECTDATA:"class_subject_list",
-  SUBJECT_VIDEOS:"classes_with_subjects"
+  SUBJECT_VIDEOS:"subject_videos"
 
 };

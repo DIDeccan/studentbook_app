@@ -2,70 +2,58 @@ import axios from "axios";
 import { baseURL, endpoints } from "./config/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const api = axios.create({
-    baseURL,
-});
-//console.log(baseURL,"ppppppppp")
+const api = axios.create({ baseURL });
+
+const refreshToken = async () => {
+  const rawToken = await AsyncStorage.getItem("refresh_token");
+  const refresh = rawToken?.replace(/^['"]+|['"]+$/g, "");
+  if (!refresh) return null;
+
+  try {
+    const oldAccess = await AsyncStorage.getItem("access_token");
+    const res = await api.post(
+      endpoints.REFRESH_TOKEN,
+      { refresh },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: oldAccess ? `Bearer ${oldAccess}` : "",
+        },
+      }
+    );
+//console.log(res.data,"=============rs===")
+    const newAccess = res.data?.data?.access;
+    const newRefresh = res.data?.data?.refresh;
+
+    if (newAccess) await AsyncStorage.setItem("access_token", newAccess);
+    if (newRefresh) await AsyncStorage.setItem("refresh_token", newRefresh);
+
+    return newAccess;
+  } catch (err) {
+    console.error("Refresh failed", err);
+    return null;
+  }
+};
+
+// Interceptor
 api.interceptors.response.use(
-  response => response,
-  async error => {
+  (response) => response,
+  async (error) => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log("error======123");
       originalRequest._retry = true;
-
-      try {
-        // 🔑 Get tokens from storage
-        const refreshToken = await AsyncStorage.getItem("refresh_token");
-        const oldAccessToken = await AsyncStorage.getItem("access_token");
-
-        if (!refreshToken || !oldAccessToken) {
-          return Promise.reject(error); // no tokens → logout
-        }
-
-        // 🔑 Call refresh API
-        const res = await axios.post(
-          endpoints.REFRESH_TOKEN,
-          { refresh: refreshToken }, // payload
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Authorization: `Bearer ${oldAccessToken}`, // previous access token
-            },
-          }
-        );
-
-        console.log("Refresh API response:", res.data);
-
-        // ✅ Correct response path
-        const newAccessToken = res.data.data.access;
-        const newRefreshToken = res.data.data.refresh;
-
-        // 🔑 Save new tokens
-        await AsyncStorage.setItem("access_token", newAccessToken);
-        if (newRefreshToken) {
-          await AsyncStorage.setItem("refresh_token", newRefreshToken);
-        }
-
-        // 🔑 Retry original request with new access token
-        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+//console.log("error======e")
+      const newAccess = await refreshToken();
+      if (newAccess) {
+        originalRequest.headers["Authorization"] = `Bearer ${newAccess}`;
         return api(originalRequest);
-      } catch (refreshError) {
-        console.log("Refresh token failed:", {
-          status: refreshError.response?.status,
-          data: refreshError.response?.data,
-          message: refreshError.message,
-        });
-        return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
   }
 );
-
-
 
 export default api;

@@ -44,7 +44,7 @@ class MainContentView(APIView):
             "Sports": "secondary",
             }
         data = []
-        general_contents = GeneralContent.objects.all()
+        general_contents = MainContent.objects.all()
 
         for content in general_contents:
             content_data = {
@@ -175,7 +175,8 @@ class SubjectList(APIView):
                 "name": subject.name,
                 "content": subject.content,
                 "image": request.build_absolute_uri(subject.image.url) if subject.image else None,
-                "class": student_class.id,
+                "class_id": student_class.id,
+                "class_name": student_class.name,
                 "icon": subject.icon,
                 "progressPercentage": round(completion_percentage, 2),
                 "color": subject_extra["color"],
@@ -219,3 +220,57 @@ class ClassWIthSubjectsView(APIView):
             status_code=status.HTTP_200_OK,
             data=data
         )
+
+
+class SubjectVediosView(APIView):
+ 
+    def get(self, request,student_id, class_id, subject_id):
+
+        student_class = Class.objects.get(id=class_id)
+        if not student_class:   
+            return api_response(
+                message="Class not found",
+                message_type="error",
+                status_code=status.HTTP_404_NOT_FOUND
+                        )
+        try:
+            student = Student.objects.get(id=student_id, student_class=class_id)
+        except Student.DoesNotExist:
+            return api_response(
+                message="Student not found",
+                message_type="error",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+
+        chapters = Chapter.objects.filter(course_id=class_id, subject_id=subject_id).order_by("chapter_number")
+    
+        data = []
+        for chapter in chapters:
+            subchapters = Subchapter.objects.filter(chapter=chapter).order_by("subchapter")
+            subchapter_data = [
+                {
+ 
+                    "id": sub.id,
+                    "subchapter": sub.subchapter,
+                    "video_name": sub.video_name,
+                    "video_url": sub.video_url,
+                    "video_duration": sub.vedio_duration,
+                    "created_at":sub.created_at
+                }
+                for sub in subchapters
+            ]
+            data.append({
+                "chapter_id": chapter.id,
+                "chapter_name": chapter.chapter_name,
+                "chapter_number": chapter.chapter_number,
+                "subject": chapter.subject.name,
+                "subject_id": chapter.subject.id,
+                "class": chapter.course.name,
+                "subchapters": subchapter_data
+            })
+ 
+        return Response(data, status=200)
+ 
+ 
+ 

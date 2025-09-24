@@ -107,14 +107,14 @@ export const SubjectsApi = createAsyncThunk(
 
 export const subjectVideosApi = createAsyncThunk(
   'subjectVideosApi',
-  async ( { student_id, class_id }: { student_id: number; class_id: number }, {getState, fulfillWithValue, rejectWithValue }) => {
+  async ( { student_id, class_id,subject_id }: { student_id: number; class_id: number,subject_id:number }, {getState, fulfillWithValue, rejectWithValue }) => {
     try {
        const state: any = getState();
       const storedToken = await AsyncStorage.getItem('access_token')
       const rawToken = state.auth?.token || storedToken
       const token = rawToken?.replace(/^['"]+|['"]+$/g, "")
 
-      const url = `${endpoints.SUBJECT_VIDEOS}/${student_id}/${class_id}`;
+      const url = `${endpoints.SUBJECT_VIDEOS}/${student_id}/${class_id}/${subject_id}`;
       const response = await api.get(url, {
         headers: {
           Authorization: `Bearer ${token}`, 
@@ -149,7 +149,7 @@ export const DemoSlice = createSlice({
 builder.addCase(getDemoData.fulfilled, (state, action) => {
   state.loading = false;
   // API sends { message, message_type, data }
-  state.getDemoVideosData = action.payload; 
+  state.getDemoVideosData = action.payload?.data; 
   state.message = action.payload.message || "Fetched successfully";
 //   console.log("Classes =>", state.getDemoVideosData);
 });
@@ -182,7 +182,7 @@ builder.addCase(getDemoData.rejected, (state, action: any) => {
     builder.addCase(SubjectsApi.fulfilled, (state, action) => {
       state.loading = false;
       state.subjectsData = action.payload?.data;
-      console.log(state.subjectsData,"=====================dashboardGetdata==========")
+      //console.log(state.subjectsData,"=====================dashboardGetdata==========")
       state.message = 'Profile fetched successfully';
     });
     builder.addCase(SubjectsApi.rejected, (state, action: any) => {
@@ -197,7 +197,7 @@ builder.addCase(getDemoData.rejected, (state, action: any) => {
     });
     builder.addCase(subjectVideosApi.fulfilled, (state, action) => {
       state.loading = false;
-      state.subjectVideosData = action.payload?.data;
+      state.subjectVideosData = action.payload;
       console.log(state.subjectVideosData,"=====================dashboardGetdata==========")
       state.message = 'Profile fetched successfully';
     });

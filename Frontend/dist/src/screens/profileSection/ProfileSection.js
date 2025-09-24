@@ -21,10 +21,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logoutAction, logoutActionReducer } from '../../redux/reducer/authReducer';
 import { baseURL } from '../../utils/config/config';
 import { useIsFocused } from "@react-navigation/native";
+import Toast from 'react-native-toast-message';
 
 const ProfileSection = ({ navigation }) => {
   const dispatch = useDispatch()
-  const getProfileData = useSelector((state)=> state.profile.getProfileData)
+  const getProfileData = useSelector((state) => state.profile.getProfileData)
   const themeMode = useSelector((state) => state.theme.theme);
   let colors = (themeMode === 'dark') ? darkColors : lightColors;
   const styles = themedStyles(colors);
@@ -32,79 +33,85 @@ const ProfileSection = ({ navigation }) => {
   const [profileImage, setProfileImage] = useState(getProfileData?.profile_image);
   const profileData = useSelector(state => state.profileData);
   const { refresh_token, loading, } = useSelector((state) => state.auth)
-const[refresh1,setRefresh] = useState(null)
-const isFocused = useIsFocused();
-//console.log(profileImage,"====================----", getProfileData)
+  const [refresh1, setRefresh] = useState(null)
+  const isFocused = useIsFocused();
+  //console.log(profileImage,"====================----", getProfileData)
 
 
   const app = async () => {
-     let storedId = await AsyncStorage.getItem('studentId')
+    let storedId = await AsyncStorage.getItem('studentId')
     let classid = await AsyncStorage.getItem('classId')
-    const studentId = storedId ? JSON.parse(storedId) : null; 
-      const classId = storedId ? JSON.parse(classid) : null; 
-        dispatch(getProfile({ student_id: studentId, class_id: classId}))
-        setProfileImage(getProfileData?.profile_image);
-      let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
-   // console.log(refreshToken, "========refresh=====", refresh_token, "refresh_token",)
+    const studentId = storedId ? JSON.parse(storedId) : null;
+    const classId = storedId ? JSON.parse(classid) : null;
+    dispatch(getProfile({ student_id: studentId, class_id: classId }))
+    setProfileImage(getProfileData?.profile_image);
+    let refreshToken = refresh_token || await AsyncStorage.getItem('refresh_token')
+    // console.log(refreshToken, "========refresh=====", refresh_token, "refresh_token",)
     setRefresh(refreshToken)
-        // console.log(baseURL+profileImage,"img")
+    // console.log(baseURL+profileImage,"img")
   };
-// console.log(getProfileData,"===============fet")
-useEffect(() => {
-  if (isFocused) {
-    app(); // reload profile whenever screen is focused
-  }
-}, [isFocused]);
+  // console.log(getProfileData,"===============fet")
+  useEffect(() => {
+    if (isFocused) {
+      app(); // reload profile whenever screen is focused
+    }
+  }, [isFocused]);
 
   useEffect(() => {
-  if (getProfileData?.profile_image) {
-    setProfileImage(getProfileData.profile_image);
-  }
-}, [getProfileData]);
+    if (getProfileData?.profile_image) {
+      setProfileImage(getProfileData.profile_image);
+    }
+  }, [getProfileData]);
 
   const EditProfileBtn = () => {
     navigation.navigate('EditProfile');
   };
 
-const handleConfirmLogout = async () => {
-  try {
-    let rawToken = refresh1 || (await AsyncStorage.getItem("refresh_token"));
-    const refreshToken = rawToken?.replace(/^['"]+|['"]+$/g, "");
-   // navigation.replace("LoginScreen");
-    if (!refreshToken) {
-      Alert.alert("Error", "No refresh token found. Please login again.");
-      return;
-    }else{
-    const res = await dispatch(logoutAction({ refresh: refreshToken }));
-    if (res.meta.requestStatus === "fulfilled") {
-      navigation.replace("LoginScreen");
-    } else if (res.meta.requestStatus === "rejected") {
-         navigation.replace("LoginScreen");
-      const errorMessage =
-        res.payload?.detail ||
-        res.payload?.message ||
-        "Logout failed. Please try again.";
-      Alert.alert("Error", errorMessage);
-       // navigation.replace("LoginScreen");
+  const handleConfirmLogout = async () => {
+    try {
+      let rawToken = refresh1 || (await AsyncStorage.getItem("refresh_token"));
+      const refreshToken = rawToken?.replace(/^['"]+|['"]+$/g, "");
+      // navigation.replace("LoginScreen");
+      if (!refreshToken) {
+        Alert.alert("Error", "No refresh token found. Please login again.");
+        return;
+      } else {
+        const res = await dispatch(logoutAction({ refresh: refreshToken }));
+        if (res.meta.requestStatus === "fulfilled") {
+              Toast.show({
+                  type: "success",
+                  text1: "Logout Successful",
+                  visibilityTime: 3000, 
+                  text2: res?.payload.message || "Logout Successful!",
+                });
+          navigation.replace("LoginScreen");
+        } else if (res.meta.requestStatus === "rejected") {
+          navigation.replace("LoginScreen");
+          const errorMessage =
+            res.payload?.detail ||
+            res.payload?.message ||
+            "Logout failed. Please try again.";
+          Alert.alert("Error", errorMessage);
+          // navigation.replace("LoginScreen");
+        }
+      }
+    } catch (error) {
+      console.error("Unexpected logout error:", error);
+      Alert.alert("Error", "Something went wrong while logging out.");
+      //  navigation.replace("LoginScreen");
     }
-    }
-  } catch (error) {
-    console.error("Unexpected logout error:", error);
-    Alert.alert("Error", "Something went wrong while logging out.");
-   //  navigation.replace("LoginScreen");
-  }
-};
+  };
 
   const settingScreenBtn = () => {
     navigation.navigate('SettingScreen')
   }
 
   const imageUri = profileImage && profileImage.startsWith('file')
-                    ? profileImage // picked from camera/gallery
-                    : profileImage
-                      ? baseURL + profileImage // from backend
-                      : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='
-  
+    ? profileImage // picked from camera/gallery
+    : profileImage
+      ? baseURL + profileImage // from backend
+      : 'https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8='
+
 
   return (
     <>
@@ -115,12 +122,13 @@ const handleConfirmLogout = async () => {
 
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-
-          <Image
-            source={{ uri: imageUri }}
-            style={styles.profileImage}
-            resizeMode='cover'
-          />
+          <View style={[styles.profileImage, { borderWidth: 1, borderRadius: 50, borderColor: 'grey' }]}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.profileImage}
+              resizeMode='cover'
+            />
+          </View>
 
           <Text style={[styles.name]}>{getProfileData?.first_name}</Text>
           <Text style={styles.title}>React Native Developer | Vizianagaram</Text>
@@ -147,7 +155,7 @@ const handleConfirmLogout = async () => {
             </TouchableOpacity>
 
             {/* Change Password */}
-            <TouchableOpacity style={styles.touchableCard} onPress={()=> navigation.navigate("ChangePassword")}>
+            <TouchableOpacity style={styles.touchableCard} onPress={() => navigation.navigate("ChangePassword")}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Image source={PasswordlockIcon} resizeMode="cover" style={styles.iconsStyle} />
                 <Text style={{ fontSize: SF(16), marginHorizontal: SW(10) }}>
@@ -200,21 +208,6 @@ const handleConfirmLogout = async () => {
               </View>
               <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
             </TouchableOpacity>
-
-            {/* Notifications */}
-            {/* <TouchableOpacity style={styles.touchableCard}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image
-                  source={{ uri: 'https://cdn-icons-png.freepik.com/512/4556/4556844.png' }}
-                  resizeMode="cover"
-                  style={styles.iconsStyle}
-                />
-                <Text style={styles.sideHeading}>
-                  Notifications
-                </Text>
-              </View>
-              <MaterialIcons size={SF(35)} name={'keyboard-arrow-right'} />
-            </TouchableOpacity> */}
 
             {/* Logout */}
             <TouchableOpacity

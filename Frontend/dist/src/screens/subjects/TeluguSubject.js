@@ -18,11 +18,98 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Slider from '@react-native-community/slider';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { darkColors, lightColors } from '../../utils/Colors';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { SF, SW } from '../../utils/dimensions';
+import { useIsFocused } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { subjectVideosApi } from '../../redux/reducer/demopagereduce';
 
 const { width, height } = Dimensions.get('window');
 
+  // const courseData = [
+  //   {
+  //     chapterTitle: 'Chapter 1: Introduction to Programming',
+  //     chapterNumber: 1,
+  //     videos: [
+  //       {
+  //         id: '1.1',
+  //         title: '1.1 What is Programming?',
+  //         description: 'Learn the basics of programming and why it is important in today\'s world.',
+  //         url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+  //         duration: '10:25',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       },
+  //       {
+  //         id: '1.2',
+  //         title: '1.2 Programming Languages',
+  //         description: 'Explore different programming languages and their applications.',
+  //         url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  //         duration: '15:40',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       },
+  //       {
+  //         id: '1.3',
+  //         title: '1.3 Setting Up Your Environment',
+  //         description: 'Step-by-step guide to setting up your development environment.',
+  //         url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  //         duration: '12:15',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       },
+  //       {
+  //         id: '1.4',
+  //         title: '1.4 Your First Program',
+  //         description: 'Write and run your first program in this beginner-friendly tutorial.',
+  //         url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+  //         duration: '18:30',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       }
+  //     ]
+  //   },
+  //   {
+  //     chapterTitle: 'Chapter 2: JavaScript Fundamentals',
+  //     chapterNumber: 2,
+  //     videos: [
+  //       {
+  //         id: '2.1',
+  //         title: '2.1 Variables and Data Types',
+  //         description: 'Learn how to declare variables and work with different data types in JavaScript.',
+  //         url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+  //         duration: '14:20',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       },
+  //       {
+  //         id: '2.2',
+  //         title: '2.2 Operators and Expressions',
+  //         description: 'Understand how to use operators and build expressions in your code.',
+  //         url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  //         duration: '16:45',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       }
+  //     ]
+  //   },
+  //   {
+  //     chapterTitle: 'Chapter 3: Control Structures',
+  //     chapterNumber: 3,
+  //     videos: [
+  //       {
+  //         id: '3.1',
+  //         title: '3.1 Conditional Statements',
+  //         description: 'Master if, else if, and switch statements to control program flow.',
+  //         url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+  //         duration: '13:10',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       },
+  //       {
+  //         id: '3.2',
+  //         title: '3.2 Loops and Iteration',
+  //         description: 'Learn how to use for, while, and do-while loops effectively.',
+  //         url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+  //         duration: '17:25',
+  //         thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+  //       }
+  //     ]
+  //   }
+  // ];
 const CoursePlayerScreen = (props) => {
   const themeMode = useSelector((state) => state.theme.theme);
   let colors = (themeMode === 'dark') ? darkColors : lightColors;
@@ -38,95 +125,54 @@ const CoursePlayerScreen = (props) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState({});
   const [fullScreenVideo, setFullScreenVideo] = useState(null);
-  
+    const {loading} = useSelector((state)=> state.demoData)
   const videoRef = useRef(null);
   const controlsTimeout = useRef(null);
-
-  const courseData = [
-    {
-      chapterTitle: 'Chapter 1: Introduction to Programming',
-      chapterNumber: 1,
-      videos: [
-        {
-          id: '1.1',
-          title: '1.1 What is Programming?',
-          description: 'Learn the basics of programming and why it is important in today\'s world.',
-          url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-          duration: '10:25',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        },
-        {
-          id: '1.2',
-          title: '1.2 Programming Languages',
-          description: 'Explore different programming languages and their applications.',
-          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-          duration: '15:40',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        },
-        {
-          id: '1.3',
-          title: '1.3 Setting Up Your Environment',
-          description: 'Step-by-step guide to setting up your development environment.',
-          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          duration: '12:15',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        },
-        {
-          id: '1.4',
-          title: '1.4 Your First Program',
-          description: 'Write and run your first program in this beginner-friendly tutorial.',
-          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-          duration: '18:30',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        }
-      ]
-    },
-    {
-      chapterTitle: 'Chapter 2: JavaScript Fundamentals',
-      chapterNumber: 2,
-      videos: [
-        {
-          id: '2.1',
-          title: '2.1 Variables and Data Types',
-          description: 'Learn how to declare variables and work with different data types in JavaScript.',
-          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-          duration: '14:20',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        },
-        {
-          id: '2.2',
-          title: '2.2 Operators and Expressions',
-          description: 'Understand how to use operators and build expressions in your code.',
-          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-          duration: '16:45',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        }
-      ]
-    },
-    {
-      chapterTitle: 'Chapter 3: Control Structures',
-      chapterNumber: 3,
-      videos: [
-        {
-          id: '3.1',
-          title: '3.1 Conditional Statements',
-          description: 'Master if, else if, and switch statements to control program flow.',
-          url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
-          duration: '13:10',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        },
-        {
-          id: '3.2',
-          title: '3.2 Loops and Iteration',
-          description: 'Learn how to use for, while, and do-while loops effectively.',
-          url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-          duration: '17:25',
-          thumbnail: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
-        }
-      ]
+    const dispatch = useDispatch();
+  const isFocused = useIsFocused();
+  const SubjectsVideosList = useSelector((state) => state.demoData.subjectVideosData)
+const subjectId = props?.route?.params?.item?.id  || null  
+const [watchedVideos, setWatchedVideos] = useState([]);
+const [watchProgress, setWatchProgress] = useState({});
+//console.log(subjectId,"======sub")
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      let storedId = await AsyncStorage.getItem('studentId')
+      let classid = await AsyncStorage.getItem('classId')
+      const studentId = storedId ? JSON.parse(storedId) : null;
+      const classId = classid ? JSON.parse(classid) : null;
+      if (studentId && classId) {
+        let resultAction = await dispatch(subjectVideosApi({ student_id: studentId, class_id: classId,subject_id:subjectId }))
+       // console.log("Dashboard API response:", JSON.stringify(resultAction, null, 2));
+      } else {
+        console.warn("Missing studentId or classId in AsyncStorage");
+      }
+    };
+    if (isFocused) {
+      fetchDashboard();
     }
-  ];
+  }, [isFocused, dispatch]);
 
+const dummyThumbnail = "https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg";
+
+const courseData = SubjectsVideosList?.map((chapter) => ({
+  chapterTitle: chapter.chapter_name,          // API -> UI
+  chapterNumber: chapter.chapter_number,       // API -> UI
+  videos: chapter.subchapters.map((video) => ({
+    id: video.id.toString(),                   // API -> UI
+    title: `${video.subchapter} ${video.video_name}`, // combine subchapter & name
+    description: "Watch and learn this lesson.", // dummy description (you can replace)
+    url: video.video_url,                      // API -> UI
+    duration: video.video_duration,            // API -> UI
+    thumbnail: dummyThumbnail                  // always dummy image
+  }))
+})) || [];
+
+const handleVideoEnd = (videoId) => {
+  if (!watchedVideos.includes(videoId)) {
+    setWatchedVideos((prev) => [...prev, videoId]);
+  }
+};
   // Set the first video as default when component mounts
   useEffect(() => {
     if (courseData.length > 0 && courseData[0].videos.length > 0) {
@@ -223,6 +269,20 @@ const CoursePlayerScreen = (props) => {
       setFullScreenVideo(selectedVideo);
     };
 
+    const getChapterProgress = (chapter) => {
+  const total = chapter.videos.reduce((sum, v) => sum + v.durationSeconds, 0);
+  const watched = chapter.videos.reduce(
+    (sum, v) => sum + Math.min(watchProgress[v.id] || 0, v.durationSeconds),
+    0
+  );
+  return Math.round((watched / total) * 100);
+};
+
+const openVideoModal = (video) => {
+  setSelectedVideo(video);
+  setModalVisible(true);
+};
+
   const renderVideoItem = (video, chapterIndex, isSelected) => {
     const progress = getProgressForVideo(video.id);
     
@@ -248,7 +308,7 @@ const CoursePlayerScreen = (props) => {
               <View 
                 style={[
                   styles.thumbnailProgress, 
-                  { width: `${progress * 100}%` }
+                 { width: `${(watchProgress[video.id] || 0) / video.durationSeconds * 100}%` }
                 ]} 
               />
             </View>
@@ -256,7 +316,10 @@ const CoursePlayerScreen = (props) => {
         </View>
         
         <View style={styles.videoInfo}>
-          <Text style={styles.videoTitle}>{video.title}</Text>
+          <Text   style={[
+    styles.videoTitle,
+    watchedVideos.includes(video.id) && { color: 'red' } // ✅ watched in red
+  ]}>{video.title}</Text>
           <Text style={styles.videoDescription} numberOfLines={2}>
             {video.description}
           </Text>
@@ -304,10 +367,23 @@ const CoursePlayerScreen = (props) => {
             ref={videoRef}
             source={{ uri: fullScreenVideo?.url }}
             style={styles.fullScreenVideo}
-            resizeMode="contain"
+            resizeMode="cover"
             volume={1.0}
             paused={paused}
             controls={false}
+              seek={watchProgress[selectedVideo.id] || 0} // 👈 resume from saved point
+              onProgress={({ currentTime }) => {
+    setWatchProgress((prev) => ({
+      ...prev,
+      [selectedVideo.id]: currentTime,
+    }));
+  }}
+  onEnd={() => {
+    setWatchProgress((prev) => ({
+      ...prev,
+      [selectedVideo.id]: selectedVideo.durationSeconds // mark full
+    }));
+  }}
           />
           <TouchableOpacity 
             style={styles.closeButton}

@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import React, { useEffect, useState, useRef } from 'react';
-import { loginImg, userProfile } from '../../images';
+import { loginImg, Spalsh_Logo1, userProfile } from '../../images';
 import { SF, SH, SW } from '../../utils/dimensions';
 import ContainerComponent from '../../components/commonComponents/Container';
 import Video from 'react-native-video';
@@ -21,7 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getDemoData } from '../../redux/reducer/demopagereduce';
 import LinearGradient from 'react-native-linear-gradient';
 
-const ClassData = [
+const ClassData1 = [
   {
     id: 1,
     name: 'Class 6',
@@ -88,9 +88,9 @@ const LandingPage = ({ navigation }) => {
   let colors = themeMode === 'dark' ? darkColors : lightColors;
   const styles = themedStyles(colors);
   const dispatch = useDispatch();
-  const DemoData = useSelector(state => state.demoData.getDemoVideosData);
+  const ClassData = useSelector(state => state.demoData.getDemoVideosData);
   const [fullScreenVideo, setFullScreenVideo] = useState(null);
-console.log(DemoData,"====demo====")
+  console.log(ClassData, "====demo====")
   const GotoLogin = () => {
     navigation.navigate('LoginScreen');
   };
@@ -119,56 +119,62 @@ console.log(DemoData,"====demo====")
     const openFullScreen = () => {
       setFullScreenVideo(item);
     };
-//console.log(item,'====item====')
+    //console.log(item,'====item====')
     return (
       <View style={styles.card}>
         <View style={styles.videoContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.9}
             onPress={openFullScreen}
           >
-            <Video
-              ref={videoRef}
-              source={{ uri: item.vedio_url }}
-              style={styles.video}
-              resizeMode="cover"
-              volume={1.0}
-              paused={paused}
-              onProgress={onProgress}
-            />
+            {item.vedio_url ? (
+              <Video
+                ref={videoRef}
+                source={{ uri: item.vedio_url }}
+                style={styles.video}
+                resizeMode="cover"
+                volume={1.0}
+                paused={paused}
+                onProgress={onProgress}
+              />
+            ) : (
+              <View style={[styles.video, { backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: '#fff' }}>Video not available</Text>
+              </View>
+            )}
             <View style={styles.videoOverlay}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.playButton}
                 onPress={togglePlayPause}
               >
-                <Ionicons 
-                  name={paused ? 'play-circle' : 'pause-circle'} 
-                  size={48} 
-                  color="rgba(255,255,255,0.8)" 
+                <Ionicons
+                  name={paused ? 'play-circle' : 'pause-circle'}
+                  size={48}
+                  color="rgba(255,255,255,0.8)"
                 />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.fullscreenButton}
                 onPress={openFullScreen}
               >
-                <Ionicons 
-                  name="expand" 
-                  size={24} 
-                  color="white" 
+                <Ionicons
+                  name="expand"
+                  size={24}
+                  color="white"
                 />
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </View>
-        
+
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
-                styles.progressFill, 
+                styles.progressFill,
                 { width: `${progress * 100}%` }
-              ]} 
+              ]}
             />
           </View>
         </View>
@@ -185,7 +191,7 @@ console.log(DemoData,"====demo====")
           <Text style={styles.cost}>₹ {item.cost}</Text>
         </View>
         <Text style={styles.description}>
-          {expanded ? item.discription : item.discription.slice(0, 100) + '...'}
+          {expanded ? item.description : item.description?.slice(0, 100) + '...'}
         </Text>
         <TouchableOpacity onPress={() => setExpanded(!expanded)}>
           <Text style={styles.seeMore}>
@@ -235,20 +241,20 @@ console.log(DemoData,"====demo====")
             paused={paused}
             controls={false}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.closeButton}
             onPress={() => setFullScreenVideo(null)}
           >
             <Ionicons name="close" size={30} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.fullScreenPlayButton}
             onPress={togglePlayPause}
           >
-            <Ionicons 
-              name={paused ? 'play-circle' : 'pause-circle'} 
-              size={64} 
-              color="rgba(255,255,255,0.8)" 
+            <Ionicons
+              name={paused ? 'play-circle' : 'pause-circle'}
+              size={64}
+              color="rgba(255,255,255,0.8)"
             />
           </TouchableOpacity>
         </View>
@@ -257,12 +263,12 @@ console.log(DemoData,"====demo====")
   };
 
   return (
-   <ContainerComponent>
-        <View style={styles.content}>
+    <ContainerComponent>
+      <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image
-              source={loginImg}
+              source={Spalsh_Logo1}
               resizeMode="cover"
               style={styles.logo}
             />
@@ -317,19 +323,26 @@ console.log(DemoData,"====demo====")
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Classes Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Demo Videos</Text>
-            <FlatList
-              data={ClassData}
-              keyExtractor={item => item.id.toString()}
-              contentContainerStyle={{ paddingBottom: SH(10) }}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => <ClassCard item={item} />}
-            />
+            {ClassData && ClassData.length > 0 ? (
+              <FlatList
+                data={ClassData}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={{ paddingBottom: SH(10) }}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => <ClassCard item={item} />}
+              />
+            ) : (
+              <Text style={{ textAlign: 'center', marginTop: 20, color: colors.text }}>
+                No demo videos available.
+              </Text>
+            )}
+
           </View>
-          
+
           {/* Why Choose Us Section */}
           <View style={styles.featureSection}>
             <Text style={styles.sectionTitle}>Why Choose Us?</Text>
@@ -367,8 +380,8 @@ console.log(DemoData,"====demo====")
         </ScrollView>
       </View>
       {fullScreenVideo && <FullScreenVideo />}
-   </ContainerComponent>
-  
+    </ContainerComponent>
+
   );
 };
 
@@ -437,22 +450,22 @@ const themedStyles = colors =>
       color: 'white',
     },
     hero: {
-      alignItems: 'center', 
+      alignItems: 'center',
       padding: 20,
     },
-    heroImg: { 
-      width: '100%', 
-      height: 200, 
-      borderRadius: 12, 
+    heroImg: {
+      width: '100%',
+      height: 200,
+      borderRadius: 12,
       marginBottom: 16,
     },
     heroContent: {
       alignItems: 'center',
     },
-    heroTitle: { 
-      fontSize: 24, 
-      fontWeight: '700', 
-      color: colors.text, 
+    heroTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
       textAlign: 'center',
       marginBottom: 8,
     },
@@ -471,13 +484,13 @@ const themedStyles = colors =>
       justifyContent: 'center',
       padding: 12,
       borderRadius: 25,
-     
+
     },
     getStartedText: {
       fontSize: 16,
       fontWeight: '600',
       color: colors.primary,
-     
+
     },
     section: {
       padding: 16,
@@ -491,7 +504,7 @@ const themedStyles = colors =>
     },
     // Class Card
     card: {
-     backgroundColor: colors.background,
+      backgroundColor: colors.background,
       padding: 16,
       marginBottom: 20,
       borderRadius: 16,
@@ -548,9 +561,9 @@ const themedStyles = colors =>
       height: '100%',
       backgroundColor: colors.primary,
     },
-    title: { 
-      fontSize: 18, 
-      fontWeight: '700', 
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
       color: colors.text,
     },
     cost: {
@@ -558,15 +571,15 @@ const themedStyles = colors =>
       fontWeight: '600',
       color: colors.primary,
     },
-    description: { 
-      fontSize: 14, 
-      color: colors.textSecondary, 
+    description: {
+      fontSize: 14,
+      color: colors.textSecondary,
       marginTop: 8,
       lineHeight: 20,
     },
-    seeMore: { 
-      marginTop: 8, 
-      color: colors.primary, 
+    seeMore: {
+      marginTop: 8,
+      color: colors.primary,
       fontWeight: '600',
       fontSize: 14,
     },
@@ -581,12 +594,12 @@ const themedStyles = colors =>
       fontSize: 16,
     },
     // Features
-    featureSection: { 
+    featureSection: {
       padding: 20,
-    //  backgroundColor:colors.background
+      //  backgroundColor:colors.background
     },
-    featureList: { 
-      flexDirection: 'row', 
+    featureList: {
+      flexDirection: 'row',
       justifyContent: 'space-between',
       flexWrap: 'wrap',
     },
@@ -615,9 +628,9 @@ const themedStyles = colors =>
       alignItems: 'center',
       marginBottom: 8,
     },
-    featureTitle: { 
-      fontSize: 14, 
-      fontWeight: '600', 
+    featureTitle: {
+      fontSize: 14,
+      fontWeight: '600',
       color: colors.text,
       textAlign: 'center',
       marginBottom: 4,

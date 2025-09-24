@@ -41,7 +41,7 @@ export const getProfile = createAsyncThunk(
       const storedToken = await AsyncStorage.getItem('access_token')
       const rawToken = state.auth?.token || storedToken
       const token = rawToken?.replace(/^['"]+|['"]+$/g, "")
-
+//console.log(token,"=======token===========getpro===")
       const url = `${endpoints.STUDENT_PROFILE}/${student_id}/${class_id}/`;
       const response = await api.get(url, {
         headers: {

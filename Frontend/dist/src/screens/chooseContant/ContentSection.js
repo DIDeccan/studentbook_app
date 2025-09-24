@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -33,8 +34,8 @@ const ContentSection = ({ navigation }) => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
   const SubjectsList = useSelector((state) => state.demoData.subjectsData)
-
-
+  const {loading} = useSelector((state)=> state.demoData)
+//console.log(SubjectsList,"====")
   useEffect(() => {
     const fetchDashboard = async () => {
       let storedId = await AsyncStorage.getItem('studentId')
@@ -43,7 +44,7 @@ const ContentSection = ({ navigation }) => {
       const classId = classid ? JSON.parse(classid) : null;
       if (studentId && classId) {
         let resultAction = await dispatch(SubjectsApi({ student_id: studentId, class_id: classId }))
-        console.log("Dashboard API response:", JSON.stringify(resultAction, null, 2));
+        //console.log("Dashboard API response:", JSON.stringify(resultAction, null, 2));
       } else {
         console.warn("Missing studentId or classId in AsyncStorage");
       }
@@ -62,7 +63,7 @@ const ContentSection = ({ navigation }) => {
 
   const selectSubject = (subject) => {
     // Navigate to specific subject based on selection
-    navigation.navigate(`${subject.name}Subject`);
+    //navigation.navigate("TeluguSubject",{subject});
   };
 
   const chooseClasses = (item) => {
@@ -86,14 +87,16 @@ const ContentSection = ({ navigation }) => {
     );
   };
 
-  const filterData = SubjectsList.filter((i) =>
-    selectedSubject === '' ? true : i.name.toLowerCase() === selectedSubject.toLowerCase()
+  const filterData = SubjectsList?.filter((i) =>
+    selectedSubject === '' ? true : i.name.toLowerCase() === selectedSubject?.toLowerCase()
   );
 
   const renderSubjectCard = ({ item }) => {
     return (
       <TouchableOpacity
-        onPress={() => selectSubject(item)}
+        onPress={() => 
+        navigation.navigate("TeluguSubject",{item})
+      }
         style={styles.subjectCard}
       >
         <LinearGradient
@@ -106,7 +109,7 @@ const ContentSection = ({ navigation }) => {
             <Ionicons name={item.icon} size={SF(20)} color="white" />
             <Text style={styles.cardTitle}>{item.name}</Text>
           </View>
-          <Text style={styles.classText}>Class {item.class}</Text>
+          <Text style={styles.classText}>{item.class_name}</Text>
         </LinearGradient>
 
         <Image source={{ uri: item.image || PlaceHolderImage }} style={styles.subjectImage} />
@@ -196,6 +199,7 @@ const ContentSection = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
                 renderItem={renderSections}
                 keyExtractor={(item, index) => index.toString()}
+                            
               />
             </View>
           )}
@@ -207,6 +211,17 @@ const ContentSection = ({ navigation }) => {
           renderItem={renderSubjectCard}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
+           ListEmptyComponent={
+                    loading ? (
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SH(50) }}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                      </View>
+                    ) : (
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SH(50) }}>
+                        <Text style={{ color: colors.text }}>No Content Available</Text>
+                      </View>
+                    )
+                  }
         />
       </View>
     </ContainerComponent>

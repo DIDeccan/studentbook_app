@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View, Dimensions, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import ContainerComponent from '../../components/commonComponents/Container';
 import { ImageBackground } from 'react-native';
@@ -25,71 +25,65 @@ const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const themeMode = useSelector(state => state.theme.theme);
   const colors = themeMode === 'dark' ? darkColors : lightColors;
-  const Contentdata = useSelector((state)=> state.demoData.mainContentData)
-//  console.log(Contentdata,"==============content====")
+  const Contentdata = useSelector((state) => state.demoData.mainContentData)
+  const { loading } = useSelector((state) => state.demoData)
+  //  console.log(Contentdata,"==============content====")
   const isFocused = useIsFocused();
 
-useEffect(() => {
-  const fetchDashboard = async () => {  
-    let storedId = await AsyncStorage.getItem('studentId')
-    let classid = await AsyncStorage.getItem('classId')
 
-    const studentId = storedId ? JSON.parse(storedId) : null; 
-    const classId = classid ? JSON.parse(classid) : null; 
-    if (studentId && classId) {
-      let resultAction = await dispatch(MainContentHome({ student_id: studentId, class_id: classId }))
-    } else {
-      console.warn("Missing studentId or classId in AsyncStorage");
-    }
-  };
-  if (isFocused) {
-    fetchDashboard();
-  }
-}, [isFocused, dispatch]);
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      let storedId = await AsyncStorage.getItem('studentId');
+      let classid = await AsyncStorage.getItem('classId');
+      const studentId = storedId ? JSON.parse(storedId) : null;
+      const classId = classid ? JSON.parse(classid) : null;
 
-  // useEffect(() => {
-  //   const fetch = async () => {
-  //     let studentId = await AsyncStorage.getItem('studentId')
-  //     let classId = await AsyncStorage.getItem('classId')
-  //     setClassId(studentId)
-  //     setClassId(classId)
-  //     dispatch(getProfile({ student_id: studentId, class_id: classId }))
-  //   };
-  //   fetch();
-  // }, [dispatch]);
+      if (studentId && classId) {
+        try {
+          let result = await dispatch(MainContentHome({ student_id: studentId, class_id: classId })).unwrap();
+        } catch (err) {
+          console.warn('MainContentHome API Error:', err);
+        }
+      } else {
+        console.warn("Missing studentId or classId in AsyncStorage");
+        setLoading(false);
+      }
+    };
+    if (isFocused) fetchDashboard();
+  }, [isFocused, dispatch]);
 
   const contentSelection = (item) => {
-  if (item.name === "My Subjects") {
-    navigation.navigate("ContentSection", { item });
-  } else if (item.name === "Yoga Tips") {
-    navigation.navigate("YogaVideos", { item });
-  } else {
-    navigation.navigate("HealthTips", { item });
-  }
+    if (item.name === "My Subjects") {
+      navigation.navigate("ContentSection", { item });
+    } else if (item.name === "Yoga Tips") {
+      navigation.navigate("YogaVideos", { item });
+    } else {
+      navigation.navigate("HealthTips", { item });
+    }
   };
 
-const getIconName = (item) => {
-  if (item.name === "My Subjects") {
-    return "menu-book";
-  } else if (item.name === "Yoga Tips") {
-    return "self-improvement";
-  } else if (item.name === "Sports") {
-    return "sports-basketball";
+  const getIconName = (item) => {
+    if (item.name === "My Subjects") {
+      return "menu-book";
+    } else if (item.name === "Yoga Tips") {
+      return "self-improvement";
+    } else if (item.name === "Sports") {
+      return "sports-basketball";
     } else if (item.name === "Healthy Living") {
-    return "favorite";
+      return "favorite";
     } else if (item.name === "Current Affairs") {
-    return "article";
-  } else {
-    return "book"; // default fallback icon
-  }
-};
+      return "article";
+    } else {
+      return "book"; // default fallback icon
+    }
+  };
 
-const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
+  const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
   const renderContentItem = ({ item }) => {
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.contentCard, { backgroundColor: colors.cardBackground }]}
-        onPress={()=>contentSelection(item)}
+        onPress={() => contentSelection(item)}
         activeOpacity={0.7}
       >
         <View style={styles.imageContainer}>
@@ -102,7 +96,7 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
             style={styles.imageGradient}
           />
           <View style={styles.iconContainer}>
-             <MaterialIcons name={getIconName(item)} size={20} color="white" />
+            <MaterialIcons name={getIconName(item)} size={20} color="white" />
           </View>
         </View>
         <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
@@ -114,7 +108,7 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
 
   return (
     <ContainerComponent>
-      <View style={[styles.container, { }]}>
+      <View style={[styles.container, {}]}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -145,7 +139,7 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
           </View>
         </View>
 
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           style={styles.scrollView}
         >
@@ -190,7 +184,7 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
                 <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -198,6 +192,17 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
               renderItem={renderContentItem}
               keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.contentList}
+              ListEmptyComponent={
+                loading ? (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SH(50) }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                  </View>
+                ) : (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SH(50) }}>
+                    <Text style={{ color: colors.text }}>No Content Available</Text>
+                  </View>
+                )
+              }
             />
           </View>
 
@@ -207,10 +212,10 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
                 Continue Watching
               </Text>
               <TouchableOpacity>
-                  <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
+                <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
               </TouchableOpacity>
             </View>
-              <HalfWatchedVideos/>
+            <HalfWatchedVideos />
             {/* <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -222,7 +227,7 @@ const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/eleme
 
           </View>
 
-  
+
           {/* Featured Section */}
           {/* <View style={[styles.featuredContainer, { backgroundColor: colors.cardBackground }]}>
             <View style={styles.featuredHeader}>
@@ -378,14 +383,13 @@ const styles = StyleSheet.create({
     marginRight: SW(15),
     borderRadius: SH(12),
     overflow: 'hidden',
-  //  backgroundColor:'white',
-   // elevation: 1,
+    // elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    borderWidth:1,
-  
+    borderWidth: 1,
+
   },
   imageContainer: {
     position: 'relative',

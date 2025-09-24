@@ -247,7 +247,7 @@ const EditProfile = () => {
             onChangeText={setName}
             style={styles.input}
             placeholder="Enter name"
-            placeholderTextColor={colors.grey}
+            placeholderTextColor={colors.greyInput}
           // if you actually want the name input to get focus automatically add: autoFocus
           />
         </View>
@@ -260,7 +260,7 @@ const EditProfile = () => {
             style={styles.input}
             keyboardType="email-address"
             placeholder="Enter email address"
-            placeholderTextColor={colors.grey}
+            placeholderTextColor={colors.greyInput}
           />
         </View>
 
@@ -273,7 +273,7 @@ const EditProfile = () => {
               style={[styles.input, { flex: 1 }]}
               keyboardType="phone-pad"
               placeholder="Enter phone number"
-              placeholderTextColor={colors.grey}
+              placeholderTextColor={colors.greyInput}
             />
             {!phoneVerified ? (
               verifying ? (

@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
-import { View, TextInput, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { View, TextInput, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 
-const OTPInput = ({ length = 6, onSubmit, onResend }) => {
+const OTPInput = ({ length = 6, onSubmit, onResend,loading }) => {
   const [otp, setOtp] = useState(Array(length).fill(""));
   const [error, setError] = useState("");
   const [timer, setTimer] = useState(30); // cooldown timer
@@ -84,10 +84,20 @@ const OTPInput = ({ length = 6, onSubmit, onResend }) => {
       </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-      <TouchableOpacity style={styles.button} onPress={handleVerify}>
+<TouchableOpacity
+  style={[styles.button, loading && { opacity: 0.7 }]}
+  onPress={handleVerify}
+  disabled={loading}  // disable while loading
+>
+  {loading ? (
+    <ActivityIndicator color="#fff" />
+  ) : (
+    <Text style={styles.buttonText}>Verify OTP</Text>
+  )}
+</TouchableOpacity>
+      {/* <TouchableOpacity style={styles.button} onPress={handleVerify}>
         <Text style={styles.buttonText}>Verify OTP</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Resend OTP Section */}
       <View style={{ marginTop: 15, flexDirection: "row" }}>

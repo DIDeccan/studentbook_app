@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginAction } from '../../../redux/reducer/authReducer';
 import { darkColors, lightColors } from '../../../utils/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from "react-native-toast-message";  
 
 const LoginScreen = props => {
     const themeMode = useSelector((state) => state.theme.theme);
@@ -61,21 +62,30 @@ const LoginScreen = props => {
 await AsyncStorage.setItem("refresh_token", login.refresh);
 await AsyncStorage.setItem("studentId"   ,String(login?.student_id))
 await AsyncStorage.setItem("classId",String(login?.class_id))
-await AsyncStorage.setItem("isPaid", JSON.stringify(login.is_paid))
+await AsyncStorage.setItem("isPaid", JSON.stringify(login?.is_paid))
 //await AsyncStorage.setItem("refresh_token", login.refresh);
+    Toast.show({
+        type: "success",
+        text1: "Login Successful",
+        visibilityTime: 3000, 
+        text2: login.message || "Welcome back!",
+      });
+       props.navigation.replace('BottomTabNavigations')
 
-
-   Alert.alert("Success", login.message || "Login successful", [
-  { text: "OK", onPress: () =>  props.navigation.replace('BottomTabNavigations')}
-]);
+//    Alert.alert("Success", login.message || "Login successful", [
+//   { text: "OK", onPress: () =>  props.navigation.replace('BottomTabNavigations')}
+// ]);
       } catch (err) {
         console.error('Login failed:', err);
-        Alert.alert(
-          translate('entervaliddata'),
-          typeof err === 'string'
+         Toast.show({
+        type: "error",
+        text1: "Login Failed ❌",
+          visibilityTime: 3000, 
+        text2:
+          typeof err === "string"
             ? err
-            : err?.message || 'Something went wrong',
-        );
+            : err?.message || "Something went wrong",
+      });
       }finally {
         setLoading(false);
       }

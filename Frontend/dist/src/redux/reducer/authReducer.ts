@@ -40,6 +40,55 @@ export interface networkStates {
   rejectWithValue: Function
 }
 
+export const refreshExpiredToken = createAsyncThunk(
+  "auth/refreshExpiredToken",
+  async (
+    { refresh }: { refresh: string | null },
+    { getState, fulfillWithValue, rejectWithValue }
+  ) => {
+    try {
+      const state: any = getState();
+      const storedToken = await AsyncStorage.getItem("access_token");
+      const rawToken = state.auth?.token || storedToken;
+      const token = rawToken?.replace(/^['"]+|['"]+$/g, "");
+
+      const response = await api.post(
+        endpoints.LOGOUT, // e.g., "/auth/logout/"
+        { refresh }, // payload
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+            validateStatus: (status) => {
+      return (status >= 200 && status < 300) || status === 205;
+    },
+  }  
+      );
+
+      if ( response.data) {
+        console.log("Logout success:", response.data);
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue("Logout failed: Empty response");
+      }
+    } catch (error: any) {
+      if (error.response) {
+        console.error("API Error:", error.response.data);
+        return rejectWithValue(error.response.data);
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+        return rejectWithValue("No response from server");
+      } else {
+        console.error("Unexpected Error:", error.message);
+        return rejectWithValue(error.message);
+      }
+    }
+  }
+);
+
+
 export const loginAction = createAsyncThunk(
   'auth/loginAction',
   async (
@@ -466,6 +515,8 @@ export const logoutAction = createAsyncThunk(
 );
 
 
+
+
 export const AuthSlice = createSlice({
   name: 'authlice',
   initialState,
@@ -655,6 +706,21 @@ builder.addCase(verifyOtp1.rejected, (state, action) => {
     action.error?.message ||
     "OTP verification failed";
 });
+   builder.addCase(refreshExpiredToken.pending, (state) => {
+        state.loading = true;
+      })
+       builder.addCase(refreshExpiredToken.fulfilled, (state, action) => {
+        state.loading = false;
+        state.token = action.payload.access;
+        state.refreshToken = action.payload.refresh;
+        state.message = action.payload.message;
+        state.message_type = action.payload.message_type; // "success"
+      })
+          builder.addCase(refreshExpiredToken.rejected, (state, action: any) => {
+        state.loading = false;
+        state.message = action.payload?.message || "Logout failed";
+        state.message_type = "error";
+      });
   },
 });
 

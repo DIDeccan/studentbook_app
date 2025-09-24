@@ -36,6 +36,7 @@ import OTPInput from '../../../components/commonComponents/OTPInput';
 import Colors, { darkColors, lightColors } from '../../../utils/Colors';
 import RazorpayCheckout from 'react-native-razorpay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const SignUpScreen = ({ navigation }) => {
   const themeMode = useSelector(state => state.theme.theme);
@@ -72,25 +73,24 @@ const SignUpScreen = ({ navigation }) => {
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#?!@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-  useEffect(() => {
-    dispatch(getClassNames());
-    //getFCMToken()
-  }, [dispatch]);
-  const tok = async () => {
-    let refresh = await AsyncStorage.getItem('refresh_token')
+
+  const tokens = async () => {
     let access = await AsyncStorage.getItem('access_token')
     let isPaid = await AsyncStorage.getItem('isPaid')
-  let stent =  await AsyncStorage.getItem("studentId", String(result?.data?.student_id))
-  const classId =  await AsyncStorage.getItem("classId",String(result?.data?.class_id))
-    console.log(access, "=====acess===",stent)
-    console.log(isPaid, "=====isPaid=====",classId)
-    if (isPaid == 'false') {
+    let stent = await AsyncStorage.getItem("studentId")
+    const classId = await AsyncStorage.getItem("classId")
+    console.log(access, "=====acess===", stent)
+    console.log(isPaid, "=====isPaid=====", classId)
+     if (isPaid == "false" && access !== null ) {
       setOtpSuccessPopup(true)
     }
   }
-  useEffect(() => {
-    tok()
-  }, []);
+    useEffect(() => {
+    dispatch(getClassNames());
+    tokens()
+    //getFCMToken()
+  }, [dispatch]);
+
   const goToLogin = () => {
     navigation.navigate('LoginScreen');
   };
@@ -130,22 +130,27 @@ const SignUpScreen = ({ navigation }) => {
           }),
         ).unwrap();
 
-          console.log('Signup Success:', result);
-        Alert.alert('Success', result?.message || 'OTP Verified', [
-          {
-            text: 'OK',
-            onPress: () => setShowOtpModal(true),
-          },
-        ]);
-        //  Alert.alert('Success', result.message);
+        console.log('Signup Success:', result);
+        Toast.show({
+          type: "success",
+          text1: "OTP Sent Successfully",
+          text2: result?.message || "OTP Sent Successfully",
+        });
+        setShowOtpModal(true)
+        // Alert.alert('Success', result?.message || 'OTP Verified', [
+        //   {
+        //     text: 'OK',
+        //     onPress: () => setShowOtpModal(true),
+        //   },
+        // ]);
+        //  Alert.alert('Success', result.message)
       } catch (err) {
         console.error('Signup Error:', err);
-        Alert.alert(
-          'Failed',
-          typeof err === 'string'
-            ? err
-            : err?.message || 'Something went wrong',
-        );
+        Toast.show({
+          type: "error",
+          text1: "Failed",
+          text2: err?.message || "Something went wrong",
+        });
       } finally {
         setLoading(false);
       }
@@ -171,11 +176,14 @@ const SignUpScreen = ({ navigation }) => {
   const handleContinue = async () => {
     try {
       setBtnLoading(true); // show loader inside button
-
+ let amount=    await AsyncStorage.getItem("amount")
+  let selectClass=   await AsyncStorage.getItem("classID")
+      const Amount = amount ? JSON.parse(amount) : null; 
+    const ClassID = selectClass ? JSON.parse(selectClass) : null; 
       const result = await dispatch(
         CreateOrder({
-          class_id: value ||3,
-          price: price || 3000,//parseInt(item.amount, 10)
+          class_id: value ||ClassID|| 3,
+          price: price || Amount || 3000,//parseInt(item.amount, 10)
         })
       );
 
@@ -183,7 +191,7 @@ const SignUpScreen = ({ navigation }) => {
         const newOrderId = result.payload?.data?.id;
         setrazorpay_order_id(newOrderId);
         await onPayment(newOrderId); // pass fresh orderId
-         setOtpSuccessPopup(false)
+        setOtpSuccessPopup(false)
       } else {
         Alert.alert('Failed', 'Could not create order, please try again');
       }
@@ -198,7 +206,7 @@ const SignUpScreen = ({ navigation }) => {
     const finalOrderId = orderIdParam || razorpay_order_id;
     console.log(finalOrderId, "finalOrderId=====", razorpay_order_id, "razorpay_order_id", orderIdParam, "orderIdParam ")
     try {
-      setLoading(true); 
+      setLoading(true);
 
       let options = {
         description: 'Credits towards consultation',
@@ -225,42 +233,54 @@ const SignUpScreen = ({ navigation }) => {
                 razorpay_signature: data.razorpay_signature,
               })
             ).unwrap();
-    if (result.message_type === "success") {
-  await AsyncStorage.setItem("studentId", String(result?.data?.student_id));
-  await AsyncStorage.setItem("classId", String(result?.data?.classId_id));
-    setOtpSuccessPopup(false)
-            console.log("Payment Verify :", result);
-          // await AsyncStorage.setItem("studentId",result?.data?.student_id.toString())
-          // await AsyncStorage.setItem("classId",result?.data?.class_id.toString())
-  navigation.navigate('BottomTabNavigations');
+            if (result.message_type === "success") {
+              await AsyncStorage.setItem("studentId", String(result?.data?.student_id));
+              await AsyncStorage.setItem("classId", String(result?.data?.class_id));
+              await AsyncStorage.setItem("isPaid", "true");
+              await AsyncStorage.removeItem("amount")
+              await AsyncStorage.removeItem("classID")
+              setOtpSuccessPopup(false)
+              console.log("Payment Verify :", result);
+              navigation.navigate('BottomTabNavigations');
+            }
+            Toast.show({
+              type: "success",
+              text1: "Payment verified successfully",
+              text2: result?.message || "Payment verified successfully",
+            });
+            setOtpSuccessPopup(false)
+            navigation.navigate('BottomTabNavigations');
 
-  console.log("✅ Stored successfully");
-}
+            // Alert.alert(
+            //   "Payment Verification",
+            //   result?.message || "Payment verified successfully", [
+            //   {
+            //     text: 'OK',
+            //     onPress: () => {
+            //       setOtpSuccessPopup(false)
+            //       navigation.navigate('BottomTabNavigations');
+            //     },
+            //   },
+            // ],
+            // );
 
-          
-            Alert.alert(
-              "Payment Verification",
-              result?.message || "Payment verified successfully", [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setOtpSuccessPopup(false)
-                  navigation.navigate('BottomTabNavigations');
-                },
-              },
-            ],
-            );
-          
+
           } catch (verifyErr) {
             console.error("Verify Failed:", verifyErr);
-            Alert.alert("Payment Failed", verifyErr?.message || "Verification failed", [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setOtpSuccessPopup(true)
-                },
-              },
-            ],);
+            Toast.show({
+              type: "error",
+              text1: "Payment Failed",
+              text2: verifyErr?.message || "Verification failed",
+            });
+            setOtpSuccessPopup(true)
+            // Alert.alert("Payment Failed", verifyErr?.message || "Verification failed", [
+            //   {
+            //     text: 'OK',
+            //     onPress: () => {
+
+            //     },
+            //   },
+            // ],);
           } finally {
             setLoading(false);
           }
@@ -276,8 +296,6 @@ const SignUpScreen = ({ navigation }) => {
       Alert.alert('Error', 'Something went wrong during payment');
     }
   };
-
-
 
   return (
     <ContainerComponent>
@@ -349,7 +367,7 @@ const SignUpScreen = ({ navigation }) => {
                 </View>
               ) : null}
 
-              <Text style={{ fontSize: SF(15), marginTop: SH(5),color:colors.text }}>Class</Text>
+              <Text style={{ fontSize: SF(15), marginTop: SH(5), color: colors.text }}>Class</Text>
               <Dropdown
                 style={styles.dropdown}
                 placeholderStyle={styles.placeholderStyle}
@@ -425,7 +443,7 @@ const SignUpScreen = ({ navigation }) => {
                   >
                     <MaterialCommunityIcons
                       size={SF(30)}
-                     color={colors.text}
+                      color={colors.text}
                       name={conPassVisible ? 'eye-outline' : 'eye-off-outline'}
                     />
                   </TouchableOpacity>
@@ -487,6 +505,7 @@ const SignUpScreen = ({ navigation }) => {
 
             <OTPInput
               length={6}
+              loading={loading}
               onSubmit={async otp => {
                 //console.log('OTP from child:', otp);
                 try {
@@ -508,44 +527,40 @@ const SignUpScreen = ({ navigation }) => {
                   );
 
                   if (verifyOtp.fulfilled.match(result)) {
-                  console.log('Success:', result.payload);
+                    console.log('Success:', result.payload);
                     await AsyncStorage.setItem("refresh_token", result.payload.data.refresh)
                     await AsyncStorage.setItem("access_token", result.payload.data.access)
                     await AsyncStorage.setItem("isPaid", JSON.stringify(result.payload.data.is_paid))
+                    await AsyncStorage.setItem("amount", JSON.stringify(price))
+                    await AsyncStorage.setItem("classID", JSON.stringify(value))
                     setOtpMessage(result.payload.message);
-                    setShowOtpModal(false)
-                    Alert.alert(
-                      'Success',
-                      result.payload.message || 'OTP Verified',
-                      [
-                        {
-                          text: 'OK',
-                          onPress: () => {
-                            setOtpSuccessPopup(true)
-                            setShowOtpModal(false)
-                          },
-                        },
-                      ],
-                    );
+                  
+                    Toast.show({
+                      type: "success",
+                      text1: "OTP Verified",
+                      text2: result.payload.message || "Signup completed successfully",
+                    });
+                    setOtpSuccessPopup(true)
+                      setShowOtpModal(false)
                   } else if (verifyOtp.rejected.match(result)) {
                     console.log('Error:', result.payload);
-                    Alert.alert(
-                      'Error',
-                      result.payload?.message || 'OTP verification failed',
-                    );
+                    Toast.show({
+                      type: "error",
+                      text1: "Verification Failed",
+                      text2: result.payload?.message || "OTP verification failed",
+                    });
                   }
                 } catch (error) {
-                  // console.log('Exception:', error);
-                  Alert.alert(
-                    'Error',
-                    'Something went wrong. Please try again.',
-                  );
-                }finally{
+                  Toast.show({
+                    type: "error",
+                    text1: "Something went wrong",
+                    text2: "Please try again.",
+                  });
+                } finally {
                   setLoading(false)
                 }
               }}
               onResend={() => {
-               // console.log('🔄 Resend clicked');
                 dispatch(
                   reSendOtp({
                     phone_number: phone,
@@ -574,7 +589,7 @@ const SignUpScreen = ({ navigation }) => {
               onPress={handleContinue}
               disabled={btnLoading}>
               {btnLoading ? (
-                <ActivityIndicator color="#fff" /> 
+                <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.continueText}>Continue</Text>
               )}
@@ -591,7 +606,7 @@ export default SignUpScreen;
 const themedStyles = colors =>
   StyleSheet.create({
     main: {
-    //  backgroundColor: '',
+      //  backgroundColor: '',
       flex: 1,
     },
     ContainerStyle: {
@@ -680,7 +695,7 @@ const themedStyles = colors =>
       fontSize: SF(15),
       color: colors.text,
     },
-   
+
     ErrorMsg: {
       fontSize: SF(12),
       color: 'red',
@@ -701,7 +716,7 @@ const themedStyles = colors =>
       borderRadius: 12,
       padding: 12,
       borderWidth: 1,
-      borderColor:colors.text,
+      borderColor: colors.text,
     },
     icon: {
       marginRight: 5,
@@ -732,7 +747,7 @@ const themedStyles = colors =>
     inputSearchStyle: {
       height: 40,
       fontSize: 16,
-      color:colors.text
+      color: colors.text
     },
     loaderOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -749,7 +764,7 @@ const themedStyles = colors =>
     },
     modalContent: {
       width: '90%',
-      backgroundColor:colors.background,
+      backgroundColor: colors.background,
       padding: 20,
       borderRadius: 12,
     },
