@@ -306,6 +306,7 @@ class Chapter(models.Model):
 class Subchapter(models.Model):
     subchapter = models.CharField(max_length=20)
     parent_subchapter = models.CharField(max_length=50, blank=True)
+    tumbnail_image = models.FileField(upload_to='images/subchapter_thumbnails/',blank=True, null=True,storage = S3Boto3Storage )
     course = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='subchapter')
     subject = ChainedForeignKey(Subject, chained_field="course",chained_model_field="course" ,on_delete=models.CASCADE, related_name="subchapter")
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='subchapter')
@@ -314,6 +315,7 @@ class Subchapter(models.Model):
     video_url = models.URLField()   # final S3/CloudFront URL
     vedio_duration = models.CharField(max_length=50, blank=True, null=True)  # e.g. "15:30"
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
     class Meta:
@@ -352,6 +354,24 @@ class MainContent(models.Model):
         return self.title
 
 
+class GeneralContentVideo(models.Model):
+    "General videos linked to MainContent (e.g., Yoga, Sports, GK)"
+    video_name = models.CharField(max_length=255)
+    subtitle = models.CharField(max_length=255, blank=True, null=True)
+    main_content = models.ForeignKey(
+        MainContent,
+        on_delete=models.CASCADE,
+        related_name="videos",
+        # limit_choices_to=~models.Q(title__iexact="My Subjects")  # exclude My Subjects
+    )
+    discription = models.TextField(blank=True, null=True)
+    video_url = models.URLField()
+    vedio_duration = models.CharField(max_length=50, blank=True, null=True)  # e.g. "15:30"
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.video_name} - {self.main_content.title}"
 
 # tracking models
 class VideoTrackingLog(models.Model):
@@ -359,6 +379,7 @@ class VideoTrackingLog(models.Model):
     subchapter = models.ForeignKey(Subchapter, on_delete=models.CASCADE, related_name="videotracking_log")
     watched_duration = models.DurationField(default=0)  # actual time user watched
     completed = models.BooleanField(default=False)
+    is_favourate = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"{self.student} - {self.subchapter} ({self.watched_duration})"
