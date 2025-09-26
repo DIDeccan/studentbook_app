@@ -81,11 +81,11 @@ const SignUpScreen = ({ navigation }) => {
     const classId = await AsyncStorage.getItem("classId")
     console.log(access, "=====acess===", stent)
     console.log(isPaid, "=====isPaid=====", classId)
-     if (isPaid == "false" && access !== null ) {
+    if (isPaid == "false" && access !== null) {
       setOtpSuccessPopup(true)
     }
   }
-    useEffect(() => {
+  useEffect(() => {
     dispatch(getClassNames());
     tokens()
     //getFCMToken()
@@ -135,8 +135,12 @@ const SignUpScreen = ({ navigation }) => {
           type: "success",
           text1: "OTP Sent Successfully",
           text2: result?.message || "OTP Sent Successfully",
+          visibilityTime: 3000,
+          onHide: () => {
+            setShowOtpModal(true)
+          },
         });
-        setShowOtpModal(true)
+
         // Alert.alert('Success', result?.message || 'OTP Verified', [
         //   {
         //     text: 'OK',
@@ -176,21 +180,21 @@ const SignUpScreen = ({ navigation }) => {
   const handleContinue = async () => {
     try {
       setBtnLoading(true); // show loader inside button
- let amount=    await AsyncStorage.getItem("amount")
-  let selectClass=   await AsyncStorage.getItem("classID")
-      const Amount = amount ? JSON.parse(amount) : null; 
-    const ClassID = selectClass ? JSON.parse(selectClass) : null; 
+      let amount = await AsyncStorage.getItem("amount")
+      let selectClass = await AsyncStorage.getItem("classID")
+      const Amount = amount ? JSON.parse(amount) : null;
+      const ClassID = selectClass ? JSON.parse(selectClass) : null;
       const result = await dispatch(
         CreateOrder({
-          class_id: value ||ClassID|| 3,
-          price: price || Amount || 3000,//parseInt(item.amount, 10)
+          class_id: value || ClassID || 3,
+          price: price || Amount || 3000,
         })
       );
 
       if (CreateOrder.fulfilled.match(result)) {
         const newOrderId = result.payload?.data?.id;
         setrazorpay_order_id(newOrderId);
-        await onPayment(newOrderId); // pass fresh orderId
+        await onPayment(newOrderId);
         setOtpSuccessPopup(false)
       } else {
         Alert.alert('Failed', 'Could not create order, please try again');
@@ -198,7 +202,7 @@ const SignUpScreen = ({ navigation }) => {
     } catch (err) {
       Alert.alert('Error', err?.message || 'Something went wrong');
     } finally {
-      setBtnLoading(false); // hide loader
+      setBtnLoading(false); 
     }
   };
 
@@ -243,27 +247,16 @@ const SignUpScreen = ({ navigation }) => {
               console.log("Payment Verify :", result);
               navigation.navigate('BottomTabNavigations');
             }
+            setOtpSuccessPopup(false)
             Toast.show({
               type: "success",
               text1: "Payment verified successfully",
               text2: result?.message || "Payment verified successfully",
+              visibilityTime: 4000,
+              onHide: () => {
+                navigation.navigate('BottomTabNavigations');
+              },
             });
-            setOtpSuccessPopup(false)
-            navigation.navigate('BottomTabNavigations');
-
-            // Alert.alert(
-            //   "Payment Verification",
-            //   result?.message || "Payment verified successfully", [
-            //   {
-            //     text: 'OK',
-            //     onPress: () => {
-            //       setOtpSuccessPopup(false)
-            //       navigation.navigate('BottomTabNavigations');
-            //     },
-            //   },
-            // ],
-            // );
-
 
           } catch (verifyErr) {
             console.error("Verify Failed:", verifyErr);
@@ -507,7 +500,6 @@ const SignUpScreen = ({ navigation }) => {
               length={6}
               loading={loading}
               onSubmit={async otp => {
-                //console.log('OTP from child:', otp);
                 try {
                   setLoading(true)
                   const result = await dispatch(
@@ -522,10 +514,9 @@ const SignUpScreen = ({ navigation }) => {
                       class_id: value,
                       is_active: false,
                       password: password,
-                      otp: otp, // use entered otp instead of hardcoded
+                      otp: otp, 
                     }),
                   );
-
                   if (verifyOtp.fulfilled.match(result)) {
                     console.log('Success:', result.payload);
                     await AsyncStorage.setItem("refresh_token", result.payload.data.refresh)
@@ -534,14 +525,17 @@ const SignUpScreen = ({ navigation }) => {
                     await AsyncStorage.setItem("amount", JSON.stringify(price))
                     await AsyncStorage.setItem("classID", JSON.stringify(value))
                     setOtpMessage(result.payload.message);
-                  
+                    setShowOtpModal(false)
                     Toast.show({
                       type: "success",
                       text1: "OTP Verified",
                       text2: result.payload.message || "Signup completed successfully",
+                      visibilityTime: 3000,
+                      onHide: () => {
+                        setOtpSuccessPopup(true)
+                      },
                     });
-                    setOtpSuccessPopup(true)
-                      setShowOtpModal(false)
+
                   } else if (verifyOtp.rejected.match(result)) {
                     console.log('Error:', result.payload);
                     Toast.show({
@@ -579,7 +573,7 @@ const SignUpScreen = ({ navigation }) => {
       >
         <View style={styles.modalBackground}>
           <View style={styles.successModalContent}>
-            <Text style={styles.successTitle}>Success</Text>
+            <Text style={styles.successTitle}>Verification done! Pay Now</Text>
             <Text style={styles.successMessage}>{otpMessage}</Text>
             <Text style={styles.successMessage}>
               Click continue to complete payment
@@ -606,7 +600,6 @@ export default SignUpScreen;
 const themedStyles = colors =>
   StyleSheet.create({
     main: {
-      //  backgroundColor: '',
       flex: 1,
     },
     ContainerStyle: {

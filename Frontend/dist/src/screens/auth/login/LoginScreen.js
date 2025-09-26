@@ -67,10 +67,14 @@ await AsyncStorage.setItem("isPaid", JSON.stringify(login?.is_paid))
     Toast.show({
         type: "success",
         text1: "Login Successful",
-        visibilityTime: 3000, 
+        //  autoHide: true,
         text2: login.message || "Welcome back!",
+           visibilityTime: 4000, 
+          onHide: () => {
+   props.navigation.replace('BottomTabNavigations');
+  },
       });
-       props.navigation.replace('BottomTabNavigations')
+      // props.navigation.replace('BottomTabNavigations')
 
 //    Alert.alert("Success", login.message || "Login successful", [
 //   { text: "OK", onPress: () =>  props.navigation.replace('BottomTabNavigations')}

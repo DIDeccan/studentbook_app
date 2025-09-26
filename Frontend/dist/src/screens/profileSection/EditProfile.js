@@ -25,6 +25,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import OTPInput from '../../components/commonComponents/OTPInput';
 import { color } from 'react-native-elements/dist/helpers';
 import Colors, { darkColors, lightColors } from '../../utils/Colors';
+import Toast from 'react-native-toast-message';
 
 const EditProfile = () => {
   const themeMode = useSelector((state) => state.theme.theme);
@@ -126,12 +127,26 @@ const EditProfile = () => {
       ).unwrap();
 
 
-      Alert.alert('Success', 'Profile updated successfully');
+   //   Alert.alert('Success', 'Profile updated successfully');
+       Toast.show({
+              type: "success",
+              text1: "Profile updated successfully",
+              text2:"Profile updated successfully!",
+              visibilityTime: 3000, 
+   
+            });
       // refresh profile and reset flags
       await dispatch(getProfile({ student_id: studentId, class_id: classId }));
     } catch (err) {
       console.log('Update failed:', err);
       Alert.alert('Error', 'Failed to update profile. Try again.');
+          Toast.show({
+              type: "Error",
+              text1: "Failed to update profile. Try again.",
+              text2:"Failed to update profile. Try again!",
+              visibilityTime: 3000, 
+   
+            });
     }
   };
 

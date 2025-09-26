@@ -50,7 +50,7 @@ const ProfileSection = ({ navigation }) => {
     setRefresh(refreshToken)
     // console.log(baseURL+profileImage,"img")
   };
-  // console.log(getProfileData,"===============fet")
+  
   useEffect(() => {
     if (isFocused) {
       app(); // reload profile whenever screen is focused
@@ -78,13 +78,17 @@ const ProfileSection = ({ navigation }) => {
       } else {
         const res = await dispatch(logoutAction({ refresh: refreshToken }));
         if (res.meta.requestStatus === "fulfilled") {
-              Toast.show({
-                  type: "success",
-                  text1: "Logout Successful",
-                  visibilityTime: 3000, 
-                  text2: res?.payload.message || "Logout Successful!",
-                });
-          navigation.replace("LoginScreen");
+          setLogOut(false)
+          Toast.show({
+            type: "success",
+            text1: "Logout Successful",
+            text2: res?.payload.message || "Logout Successful!",
+            visibilityTime: 4000,
+            onHide: () => {
+              navigation.replace("LoginScreen");
+            }
+          });
+          // navigation.replace("LoginScreen");
         } else if (res.meta.requestStatus === "rejected") {
           navigation.replace("LoginScreen");
           const errorMessage =
