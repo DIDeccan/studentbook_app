@@ -152,7 +152,7 @@ class MainContentView(APIView):
 
 
 class SubjectList(APIView):
-     permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     def get(self, request, student_id, class_id):
         student_class = Class.objects.get(id=class_id)
         if not student_class:   
