@@ -133,6 +133,56 @@ export const subjectVideosApi = createAsyncThunk(
   },
 );
 
+export const trackingVideoApi = createAsyncThunk(
+  'trackingVideoApi',
+  async (
+    {
+      student_id,
+      class_id,
+      subchapter_id,
+      watched_seconds
+    }: {
+        student_id: number;
+      class_id: number;
+      subchapter_id: string | number;
+      watched_seconds:string | number
+     
+    },
+    {getState, fulfillWithValue, rejectWithValue },
+  ) => {
+    try {
+      const state: any = getState();
+      const storedToken = await AsyncStorage.getItem('access_token')
+      const rawToken = state.auth?.token || storedToken
+      const token = rawToken?.replace(/^['"]+|['"]+$/g, "")  
+
+    const data = {
+    subchapter_id,
+    watched_seconds
+    };
+      const url = `${endpoints.TRACKING_VIDEO}/${student_id}/${class_id}`;
+      const response = await api.post(url, data, {
+        headers: {
+    "Content-Type": "multipart/form-data",
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data,"=====response===")
+      return fulfillWithValue(response.data);
+    } catch (error: any) {
+      console.log(
+        'Tracking Video Profile API Error:',
+        error.response?.data || error.message,
+      );
+      return rejectWithValue(
+        error.response?.data || { message: "Tracking Video update failed" },
+      );
+    }
+  },
+); 
+
+
 
 export const DemoSlice = createSlice({
   name: 'DemoSlice',
@@ -197,14 +247,29 @@ builder.addCase(getDemoData.rejected, (state, action: any) => {
     });
     builder.addCase(subjectVideosApi.fulfilled, (state, action) => {
       state.loading = false;
-      state.subjectVideosData = action.payload;
-      console.log(state.subjectVideosData,"=====================dashboardGetdata==========")
-      state.message = 'Profile fetched successfully';
+      state.subjectVideosData = action.payload.data;
+     // console.log(state.subjectVideosData,"=====================dashboardGetdata==========")
+      state.message = 'Videos fetched successfully';
     });
     builder.addCase(subjectVideosApi.rejected, (state, action: any) => {
       state.loading = false;
       state.error = action.payload?.message || 'getting data failed';
     });
+        builder.addCase(trackingVideoApi.pending, state => {
+          state.loading = true;
+          state.message = null;
+        });
+    
+        builder.addCase(trackingVideoApi.fulfilled, (state, action) => {
+          state.loading = false;
+          state.message =
+            action.payload?.message || 'Tracking video successfully';
+        });
+    
+        builder.addCase(trackingVideoApi.rejected, state => {
+          state.loading = false;
+          state.message = 'Tracking video  failed';
+        });
 
   },
 });

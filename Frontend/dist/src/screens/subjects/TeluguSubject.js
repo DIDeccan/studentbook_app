@@ -10,7 +10,8 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import Video from 'react-native-video';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -22,7 +23,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { SF, SW } from '../../utils/dimensions';
 import { useIsFocused } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { subjectVideosApi } from '../../redux/reducer/demopagereduce';
+import { subjectVideosApi, trackingVideoApi } from '../../redux/reducer/demopagereduce';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,27 +39,18 @@ const CoursePlayerScreen = (props) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
-  //const [isFullScreen, setIsFullScreen] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState({});
-  //const [fullScreenVideo, setFullScreenVideo] = useState(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-const [fullScreenVideo, setFullScreenVideo] = useState(null);
-
+  const [fullScreenVideo, setFullScreenVideo] = useState(null);
   const { loading } = useSelector((state) => state.demoData);
   const videoRef = useRef(null);
-  const controlsTimeout = useRef(null);
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
-
-  // This selector is the raw API data which may be either:
-  // - An array of chapter objects
-  // - An object like { message, message_type, data: [ chapters ] }
   const SubjectsVideosList = useSelector((state) => state.demoData.subjectVideosData);
 
   const subjectId = props?.route?.params?.item?.id || null;
   const [watchedVideos, setWatchedVideos] = useState([]);
-  // watchProgress stores seconds watched for each video: { [videoId]: seconds }
   const [watchProgress, setWatchProgress] = useState({});
+
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -66,11 +58,14 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
       let classid = await AsyncStorage.getItem('classId');
       const studentId = storedId ? JSON.parse(storedId) : null;
       const classId = classid ? JSON.parse(classid) : null;
+      //console.log(studentId,classId,subjectId,"====su000----")
       if (studentId && classId) {
         await dispatch(subjectVideosApi({ student_id: studentId, class_id: classId, subject_id: subjectId }));
       } else {
         console.warn("Missing studentId or classId in AsyncStorage");
       }
+      studentIdRef.current = storedId ? JSON.parse(storedId) : null;
+      classIdRef.current = classid ? JSON.parse(classid) : null;
     };
     if (isFocused) {
       fetchDashboard();
@@ -79,14 +74,12 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
 
   const dummyThumbnail = "https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg";
 
-  // Helper: safely get array of chapters
   const safeChaptersArray = Array.isArray(SubjectsVideosList)
     ? SubjectsVideosList
     : Array.isArray(SubjectsVideosList?.data)
       ? SubjectsVideosList.data
       : [];
 
-  // Helper to parse "0:00:54" or "01:23" -> seconds
   const parseDurationToSeconds = (dur) => {
     if (!dur) return 0;
     const parts = String(dur).split(':').map(p => parseInt(p, 10) || 0);
@@ -95,7 +88,6 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
     return parts[0] || 0;
   };
 
-  // Normalize API -> UI courseData (always an array)
   const courseData = safeChaptersArray.map((chapter) => ({
     chapterTitle: chapter.chapter_name,
     chapterNumber: chapter.chapter_number,
@@ -108,11 +100,11 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
       durationSeconds: parseDurationToSeconds(video.video_duration),
       thumbnail: video.image || dummyThumbnail,
       watchedDurationSeconds: parseDurationToSeconds(video.watched_duration || '0:00'),
-      is_favourate: !!video.is_favourate
+      is_favourate: !!video.is_favourate,
+      percentage_completed: video.percentage_completed || "0"
     })) : []
   }));
 
-  // When courseData changes (after API load), set initial selected video & expanded chapters
   useEffect(() => {
     if (courseData.length > 0 && courseData[0].videos.length > 0) {
       const firstVideo = courseData[0].videos[0];
@@ -128,31 +120,23 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
       setExpandedChapters(initialExpanded);
       setActiveChapter(0);
     }
-  }, [/* depend on the normalized data */ JSON.stringify(courseData)]); // stringify to detect deep changes
-
-  const toggleFavorite = (id) => {
-    setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, [JSON.stringify(courseData)]);
 
   const handleVideoSelect = (video, chapterIndex) => {
-    setSelectedVideo({
-      ...video,
-      chapterTitle: courseData[chapterIndex].chapterTitle
-    });
+    setSelectedVideo({ ...video, chapterTitle: courseData[chapterIndex].chapterTitle });
     setActiveChapter(chapterIndex);
+
+    const lastTime = watchProgress[video.id] || video.watchedDurationSeconds || 0;
+    setTimeout(() => {
+      if (videoRef.current?.seek && lastTime > 0) {
+        videoRef.current.seek(lastTime);
+      }
+    }, 300);
+
     setIsPlaying(true);
   };
 
-  const togglePlayPause = () => {
-    setIsPlaying(prev => !prev);
-  };
-
-  const toggleFullScreen = () => {
-    setIsFullScreen(prev => !prev);
-    if (Platform.OS === 'android') {
-      StatusBar.setHidden(!isFullScreen);
-    }
-  };
+  const togglePlayPause = () => setIsPlaying(prev => !prev);
 
   const toggleChapter = (chapterIndex) => {
     setExpandedChapters(prev => ({
@@ -161,31 +145,11 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
     }));
   };
 
-  // On regular player progress: store seconds in watchProgress (not fraction)
-  // const onProgress = (data) => {
-  //   setCurrentTime(data.currentTime);
-  //   setDuration(data.seekableDuration || data.playableDuration || duration);
-
-  //   if (selectedVideo) {
-  //     setWatchProgress(prev => ({
-  //       ...prev,
-  //       [selectedVideo.id]: data.currentTime
-  //     }));
-  //     // also store fraction for legacy places if you want
-  //     setVideoProgress(prev => ({
-  //       ...prev,
-  //       [selectedVideo.id]: (selectedVideo.durationSeconds ? data.currentTime / selectedVideo.durationSeconds : 0)
-  //     }));
-  //   }
-  // };
-
-  const onSlidingStart = () => {
-    setIsPlaying(false);
-  };
+  const onSlidingStart = () => setIsPlaying(false);
 
   const onSlidingComplete = (value) => {
     const seekTime = (value * duration) || 0;
-    if (videoRef.current && typeof videoRef.current.seek === 'function') {
+    if (videoRef.current?.seek) {
       videoRef.current.seek(seekTime);
     }
     setIsPlaying(true);
@@ -198,20 +162,10 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const getProgressForVideo = (videoId) => {
-    const secs = watchProgress[videoId] || 0;
-    // find the video duration
-    const allVideos = courseData.flatMap(c => c.videos || []);
-    const vid = allVideos.find(v => v.id === videoId);
-    if (!vid || !vid.durationSeconds) return 0;
-    return Math.min(secs / vid.durationSeconds, 1);
-  };
-
   const handleVideoEnd = (videoId) => {
     if (!watchedVideos.includes(videoId)) {
       setWatchedVideos((prev) => [...prev, videoId]);
     }
-    // mark full progress
     setWatchProgress(prev => {
       const allVideos = courseData.flatMap(c => c.videos || []);
       const vid = allVideos.find(v => v.id === videoId);
@@ -221,8 +175,10 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
   };
 
   const renderVideoItem = (video, chapterIndex, isSelected) => {
-    const progressFraction = getProgressForVideo(video.id);
-    const pct = Math.min(Number.isFinite(progressFraction) ? progressFraction * 100 : 0, 100);
+    const apiPct = video.percentage_completed || 0;
+    const localSecs = watchProgress[video.id] || video.watchedDurationSeconds || 0;
+    const pct = video.durationSeconds ? Math.min((localSecs / video.durationSeconds) * 100, 100) : apiPct;
+    const finalPct = Math.max(apiPct, pct);
 
     return (
       <TouchableOpacity
@@ -239,250 +195,187 @@ const [fullScreenVideo, setFullScreenVideo] = useState(null);
               <Ionicons name="play-circle" size={36} color="white" />
             )}
           </View>
-
           <View style={styles.durationBadge}>
             <Text style={styles.durationText}>{video.duration}</Text>
           </View>
-
-          {pct > 0 && (
+          {finalPct > 0 && (
             <View style={styles.thumbnailProgressContainer}>
-              <View style={[styles.thumbnailProgress, { width: `${pct}%` }]} />
+              <View style={[styles.thumbnailProgress, { width: `${finalPct}%` }]} />
             </View>
           )}
         </View>
-
         <View style={styles.videoInfo}>
-          <Text style={[styles.videoTitle, watchedVideos.includes(video.id) && { color: 'red' }]}>
-            {video.title}
-          </Text>
-          <Text style={styles.videoDescription} numberOfLines={2}>
-            {video.description}
-          </Text>
-
-          <View style={styles.videoActions}>
-            <TouchableOpacity onPress={() => toggleFavorite(video.id)} style={styles.favButton}>
-              <FontAwesome name={favorites[video.id] ? 'heart' : 'heart-o'} size={20} color={favorites[video.id] ? '#E91E63' : '#666'} />
-            </TouchableOpacity>
-
-            <View style={styles.chapterTag}>
-              <Text style={styles.chapterTagText}>Chapter {courseData[chapterIndex].chapterNumber}</Text>
-            </View>
-          </View>
+          <Text style={[styles.videoTitle, finalPct >= 100 && { color: 'red' }]}>{video.title}</Text>
+          <Text style={styles.videoDescription} numberOfLines={2}>{video.description}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  // const openFullScreen = () => {
-  //   setFullScreenVideo(selectedVideo);
-  // };
   const openFullScreen = () => {
-  if (!fullScreenVideo) {
-    setFullScreenVideo(selectedVideo);
-  }
-};
+    if (!fullScreenVideo) setFullScreenVideo(selectedVideo);
+  };
+  const closeFullScreen = () => setFullScreenVideo(null);
 
-const closeFullScreen = () => {
-  // cleanup before closing
-  if (videoRef.current) {
-    try { videoRef.current.pause?.(); } catch {}
-  }
-  setFullScreenVideo(null);
-};
-const getVideoPercentage = (videoId) => {
-  const secs = watchProgress[videoId] || 0;
-  const allVideos = courseData.flatMap(c => c.videos || []);
-  const vid = allVideos.find(v => v.id === videoId);
-  if (!vid || !vid.durationSeconds) return 0;
-  return Math.min((secs / vid.durationSeconds) * 100, 100);
-};
+  const onProgress1 = async (data) => {
 
-// Calculate total course progress (all videos average %)
-const getTotalCoursePercentage = () => {
-  const allVideos = courseData.flatMap(c => c.videos || []);
-  if (allVideos.length === 0) return 0;
-  const percentages = allVideos.map(v => getVideoPercentage(v.id));
-  const total = percentages.reduce((a, b) => a + b, 0);
-  return total / allVideos.length;
-};
+    setCurrentTime(data.currentTime);
+    setDuration(data.seekableDuration || data.playableDuration || duration);
 
-const onProgress = (data) => {
-  setCurrentTime(data.currentTime);
-  setDuration(data.seekableDuration || data.playableDuration || duration);
+    if (!selectedVideo) return;
 
-  if (selectedVideo) {
-    setWatchProgress(prev => ({
-      ...prev,
-      [selectedVideo.id]: data.currentTime
-    }));
-
-    // Log live progress (optional)
-    console.log("Video", selectedVideo.id, "Watched:", data.currentTime.toFixed(1), "sec", "-", getVideoPercentage(selectedVideo.id).toFixed(1), "%");
-  }
-};
-
-  // Full-screen modal player
-const FullScreenVideo = () => {
-  const [paused, setPaused] = useState(false);
-  const ref = useRef(null);
-  const videoId = String(fullScreenVideo?.id || '');
-
-  const togglePlayPauseFS = () => setPaused(prev => !prev);
-
-  const handleStop = () => {
-    setPaused(true);
-    const secs = watchProgress[videoId] || 0;
-    const pct = getVideoPercentage(videoId);
-    console.log("STOP:", {
-      videoId,
-      watchedSeconds: secs.toFixed(1),
-      percentage: pct.toFixed(1) + "%",
-      totalCourse: getTotalCoursePercentage().toFixed(1) + "%"
-    });
-    // later: dispatch/save to backend
+    setWatchProgress((prev) => ({ ...prev, [selectedVideo.id]: data.currentTime }));
+    console.log("Hiiiii111")
+    const lastSent = watchProgress[selectedVideo.id + '_lastSent'] || 0;
+    const currentSecond = Math.floor(data.currentTime);
+    console.log("Hiiiii222")
+    if (currentSecond - lastSent >= 1) {
+      setWatchProgress((prev) => ({ ...prev, [selectedVideo.id + '_lastSent']: currentSecond }));
+      const storedId = await AsyncStorage.getItem('studentId');
+      const classid = await AsyncStorage.getItem('classId');
+      const studentId = storedId ? JSON.parse(storedId) : null;
+      const classId = classid ? JSON.parse(classid) : null;
+          console.log("Hiiiii33")
+      console.log(studentId,classId,selectedVideo.id, currentSecond,"=====rume")
+      if (studentId && classId) {
+        dispatch(
+          trackingVideoApi({
+            student_id: '255',
+            class_id: classId,
+            subchapter_id: selectedVideo.id,
+            watched_seconds: currentSecond,
+          })
+        ).unwrap().catch((err) => console.log('Tracking Error:', err));
+      }
+    }
   };
 
-  return (
-    <Modal visible={!!fullScreenVideo} supportedOrientations={['portrait', 'landscape']} animationType="fade">
-      <View style={styles.fullScreenContainer}>
-        <Video
-          ref={ref}
-          source={{ uri: fullScreenVideo?.url }}
-          style={styles.fullScreenVideo}
-          resizeMode="cover"
-          paused={paused}
-          onProgress={({ currentTime }) => {
-            setWatchProgress((prev) => ({ ...prev, [videoId]: currentTime }));
-          }}
-          onLoad={() => {
-            const pos = watchProgress[videoId] || 0;
-            if (ref.current && typeof ref.current.seek === 'function' && pos > 0) {
-              ref.current.seek(pos);
-            }
-          }}
-          onEnd={() => {
-            const durationSecs = fullScreenVideo?.durationSeconds || 0;
-            setWatchProgress((prev) => ({ ...prev, [videoId]: durationSecs }));
-            console.log("Video End:", videoId, "100%");
-          }}
-        />
 
-        {/* STOP button */}
-        <TouchableOpacity style={styles.stopButton} onPress={handleStop}>
-          <Ionicons name="stop-circle" size={48} color="red" />
-        </TouchableOpacity>
+  const lastSentRef = useRef(0);
 
-        {/* Play/Pause toggle */}
-        <TouchableOpacity style={styles.fullScreenPlayButton} onPress={togglePlayPauseFS}>
-          <Ionicons name={paused ? 'play-circle' : 'pause-circle'} size={64} color="rgba(255,255,255,0.8)" />
-        </TouchableOpacity>
+const onProgress = (data) => {
+  // Always update UI smoothly
+  setCurrentTime(data.currentTime);
+  setDuration(data.seekableDuration || data.playableDuration || duration);
+  if (!selectedVideo) return;
 
-        {/* Close */}
-        <TouchableOpacity style={styles.closeButton} onPress={() => setFullScreenVideo(null)}>
-          <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
+  setWatchProgress(prev => ({
+    ...prev,
+    [selectedVideo.id]: data.currentTime
+  }));
 
-        {/* Progress bar (same as small player) */}
-        <Slider
-          style={styles.progressSlider}
-          minimumValue={0}
-          maximumValue={1}
-          value={(watchProgress[videoId] || 0) / (fullScreenVideo?.durationSeconds || 1)}
-          onSlidingComplete={(val) => {
-            const seekTo = val * (fullScreenVideo?.durationSeconds || 0);
-            if (ref.current && typeof ref.current.seek === 'function') {
-              ref.current.seek(seekTo);
-            }
-          }}
-          minimumTrackTintColor="#FF0000"
-          maximumTrackTintColor="#FFFFFF"
-          thumbTintColor="#FF0000"
-        />
-      </View>
-    </Modal>
-  );
+  const currentSecond = Math.floor(data.currentTime);
+
+  // Only update lastSentRef, but no async calls here
+  if (currentSecond - lastSentRef.current >= 10) {
+    lastSentRef.current = currentSecond;
+    scheduleTrackingApi(currentSecond);
+  }
+};
+
+// Use a ref to prevent multiple pending calls
+const trackingTimeoutRef = useRef(null);
+const scheduleTrackingApi = (seconds) => {
+  if (trackingTimeoutRef.current) return;
+
+  trackingTimeoutRef.current = setTimeout(async () => {
+    trackingTimeoutRef.current = null; // allow next call
+
+    const storedId = await AsyncStorage.getItem('studentId');
+    const classid = await AsyncStorage.getItem('classId');
+    const studentId = storedId ? JSON.parse(storedId) : null;
+    const classId = classid ? JSON.parse(classid) : null;
+
+    if (studentId && classId && selectedVideo) {
+      dispatch(trackingVideoApi({
+        student_id: studentId,
+        class_id: classId,
+        subchapter_id: selectedVideo.id,
+        watched_seconds: seconds,
+      }))
+      .unwrap()
+      .catch(err => console.log('Tracking Error:', err));
+    }
+  }, 0); // you can add a slight delay if needed
 };
 
 
   return (
     <ContainerComponent>
-      <SafeAreaView style={[styles.container, isFullScreen && styles.fullScreenContainer]}>
-        {!isFullScreen && (
+     
+        <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => { props.navigation.goBack(); }}>
+            <TouchableOpacity style={styles.backButton} onPress={() => props.navigation.goBack()}>
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Programming Course</Text>
             <View style={styles.placeholder} />
           </View>
-        )}
-
-        <View style={[styles.content, isFullScreen && styles.fullScreenContent]}>
-          {selectedVideo && (
-            <TouchableOpacity style={[styles.videoSection1, isFullScreen && styles.fullScreenVideoSection]} activeOpacity={1}>
-              <View style={styles.videoSection}>
-                <Video
-                  ref={videoRef}
-                  source={{ uri: selectedVideo.url }}
-                  style={[styles.videoPlayer, isFullScreen && styles.fullScreenVideoPlayer]}
-                  paused={!isPlaying}
-                  onProgress={onProgress}
-                  onLoad={(data) => setDuration(data?.duration || selectedVideo.durationSeconds || 0)}
-                  resizeMode="stretch"
-                />
-
-                {showControls && (
-                  <View style={styles.controlsOverlay}>
-                    <TouchableOpacity style={styles.centerPlayButton} onPress={togglePlayPause}>
-                      <Ionicons name={isPlaying ? 'pause' : 'play'} size={48} color="white" />
-                    </TouchableOpacity>
-
-                    <View style={styles.bottomControls}>
-                      <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-
-                      <Slider
-                        style={styles.progressSlider}
-                        minimumValue={0}
-                        maximumValue={1}
-                        value={(duration && currentTime) ? currentTime / duration : 0}
-                        onSlidingStart={onSlidingStart}
-                        onSlidingComplete={(val) => {
-                          // If duration is zero, don't seek.
-                          if (!duration) return;
-                          const seekTo = val * duration;
-                          if (videoRef.current && typeof videoRef.current.seek === 'function') {
-                            videoRef.current.seek(seekTo);
-                          }
-                          setIsPlaying(true);
-                        }}
-                        minimumTrackTintColor="#FF0000"
-                        maximumTrackTintColor="#FFFFFF"
-                        thumbTintColor="#FF0000"
-                      />
-
-                      <Text style={styles.timeText}>{formatTime(duration)}</Text>
-
-                      {!isFullScreen && (
+        {loading ? (
+        <View style={styles.loaderOverlay}>
+          <ActivityIndicator size="large" color="green" />
+        </View>
+          ) : (
+          <View style={styles.content}>
+            {selectedVideo && (
+              <TouchableOpacity style={styles.videoSection1} activeOpacity={1}>
+                <View style={styles.videoSection}>
+                  <Video
+                    ref={videoRef}
+                    source={{ uri: selectedVideo.url }}
+                    style={styles.videoPlayer}
+                    paused={!isPlaying}
+                    resizeMode="contain"
+                    onProgress={onProgress}
+                    onLoad={(data) => {
+                      setDuration(data?.duration || selectedVideo.durationSeconds || 0);
+                      const lastTime = watchProgress[selectedVideo.id] || 0;
+                      if (lastTime > 0 && videoRef.current?.seek) {
+                        videoRef.current.seek(lastTime);
+                      }
+                    }}
+                    onEnd={() => handleVideoEnd(selectedVideo.id)}
+                  />
+                  {showControls && (
+                    <View style={styles.controlsOverlay}>
+                      <TouchableOpacity style={styles.centerPlayButton} onPress={togglePlayPause}>
+                        <Ionicons name={isPlaying ? 'pause' : 'play'} size={48} color="white" />
+                      </TouchableOpacity>
+                      <View style={styles.bottomControls}>
+                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                        <Slider
+                          style={styles.progressSlider}
+                          minimumValue={0}
+                          maximumValue={1}
+                          value={(duration && currentTime) ? currentTime / duration : 0}
+                          onSlidingStart={onSlidingStart}
+                          onSlidingComplete={(val) => {
+                            if (!duration) return;
+                            const seekTo = val * duration;
+                            if (videoRef.current?.seek) {
+                              videoRef.current.seek(seekTo);
+                            }
+                            setIsPlaying(true);
+                          }}
+                          minimumTrackTintColor="#FF0000"
+                          maximumTrackTintColor="#FFFFFF"
+                          thumbTintColor="#FF0000"
+                        />
+                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
                         <TouchableOpacity style={styles.controlButton} onPress={openFullScreen}>
                           <Ionicons name="expand-outline" size={24} color="white" />
                         </TouchableOpacity>
-                      )}
+                      </View>
                     </View>
-                  </View>
-                )}
-              </View>
-
-              {!isFullScreen && (
+                  )}
+                </View>
                 <View style={styles.videoInfoPanel}>
                   <Text style={styles.currentChapter}>{selectedVideo.chapterTitle}</Text>
                   <Text style={styles.videoTitleLarge}>{selectedVideo.title}</Text>
                   <Text style={styles.videoDescriptionLarge}>{selectedVideo.description}</Text>
                 </View>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {!isFullScreen && (
+              </TouchableOpacity>
+            )}
             <ScrollView style={styles.chaptersList}>
               {courseData.map((chapter, chapterIndex) => (
                 <View key={chapterIndex} style={styles.chapterContainer}>
@@ -493,7 +386,6 @@ const FullScreenVideo = () => {
                     <Text style={styles.chapterTitle}>{chapter.chapterTitle}</Text>
                     <Ionicons name={expandedChapters[chapterIndex] ? 'chevron-up' : 'chevron-down'} size={20} color="#666" />
                   </TouchableOpacity>
-
                   {expandedChapters[chapterIndex] && (
                     <View style={styles.videosContainer}>
                       {Array.isArray(chapter.videos) && chapter.videos.map((video) =>
@@ -504,19 +396,86 @@ const FullScreenVideo = () => {
                 </View>
               ))}
             </ScrollView>
+          </View>
           )}
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+    
+     {fullScreenVideo && (
+  <Modal
+    visible
+    supportedOrientations={['portrait', 'landscape']}
+    animationType="fade"
+    transparent={false}
+  >
+    <View style={styles.fullScreenContainer}>
+      <Video
+        ref={videoRef}
+        source={{ uri: fullScreenVideo?.url }}
+        style={styles.fullScreenVideo}
+        resizeMode="contain"
+        paused={!isPlaying}
+        onProgress={({ currentTime }) => {
+          setCurrentTime(currentTime);
+          setWatchProgress((prev) => ({
+            ...prev,
+            [fullScreenVideo.id]: currentTime,
+          }));
+        }}
+        onLoad={(data) => {
+          const pos = watchProgress[fullScreenVideo.id] || 0;
+          setDuration(data?.duration || fullScreenVideo.durationSeconds || 0);
+          if (pos > 0) {
+            videoRef.current?.seek(pos);
+          }
+        }}
+        onEnd={() => handleVideoEnd(fullScreenVideo.id)}
+      />
 
-      {fullScreenVideo && <FullScreenVideo />}
+      {/* Close Button */}
+      <TouchableOpacity style={styles.closeButton} onPress={closeFullScreen}>
+        <Ionicons name="close" size={30} color="black" />
+      </TouchableOpacity>
+
+      {/* Play/Pause Button */}
+      <TouchableOpacity
+        style={styles.fullScreenPlayButton}
+        onPress={() => setIsPlaying((prev) => !prev)}
+      >
+        <Ionicons name={isPlaying ? 'pause' : 'play'} size={50} color="white" />
+      </TouchableOpacity>
+
+      {/* Progress Bar */}
+      <View style={styles.fullScreenProgressContainer}>
+        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+        <Slider
+          style={{ flex: 1, marginHorizontal: 10 }}
+          minimumValue={0}
+          maximumValue={1}
+          value={duration ? currentTime / duration : 0}
+          onSlidingStart={() => setIsPlaying(false)}
+          onSlidingComplete={(val) => {
+            const seekTime = val * duration;
+            if (videoRef.current?.seek) {
+              videoRef.current.seek(seekTime);
+            }
+            setIsPlaying(true);
+          }}
+          minimumTrackTintColor="#FF0000"
+          maximumTrackTintColor="#FFFFFF"
+          thumbTintColor="#FF0000"
+        />
+        <Text style={styles.timeText}>{formatTime(duration)}</Text>
+      </View>
+    </View>
+  </Modal>
+)}
+
     </ContainerComponent>
   );
 };
 
 const themedStyles = (colors) => StyleSheet.create({
-  // ... reuse your existing styles here exactly as before ...
   container: { flex: 1 },
-  fullScreenContainer: { backgroundColor: 'black', flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -530,14 +489,10 @@ const themedStyles = (colors) => StyleSheet.create({
   headerTitle: { fontSize: SF(18), fontWeight: 'bold', color: colors.text },
   placeholder: { width: 32 },
   content: { flex: 1 },
-  fullScreenContent: { backgroundColor: '#000' },
   videoSection: { backgroundColor: '#000', position: 'relative' },
-  fullScreenVideoSection: { width: '100%', height: '100%', justifyContent: 'center' },
   videoPlayer: { height: 240, width: '100%' },
-  fullScreenVideoPlayer: { height: '100%', width: '100%' },
   controlsOverlay: { justifyContent: 'space-between' },
   centerPlayButton: { position: 'absolute', left: 0, right: 0, bottom: 100, justifyContent: 'center', alignItems: 'center' },
-  centerPlayIcon: { borderRadius: 50 },
   bottomControls: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   progressSlider: { flex: 1, height: 40, marginHorizontal: 10 },
   timeText: { color: 'white', fontSize: 12, width: 40 },
@@ -554,6 +509,8 @@ const themedStyles = (colors) => StyleSheet.create({
   chapterTitle: { fontSize: 16, fontWeight: '600', color: '#333', flex: 1 },
   videosContainer: { paddingHorizontal: 16, paddingBottom: 16 },
   videoItem: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  //selectedVideoItem: { backgroundColor: '#F0F7FF
+
   selectedVideoItem: { backgroundColor: '#F0F7FF', borderLeftWidth: 4, borderLeftColor: '#4361EE' },
   videoThumbnailContainer: { position: 'relative', width: 120, height: 80, borderRadius: 8, overflow: 'hidden', marginRight: 12 },
   videoThumbnail: { width: '100%', height: '100%' },
@@ -578,6 +535,33 @@ const themedStyles = (colors) => StyleSheet.create({
   left: 20,
   zIndex: 10,
 },
+  loaderOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0,0,0,0.3)", // dim background
+  zIndex: 999,
+},
+fullScreenProgressContainer: {
+  position: 'absolute',
+  bottom: 40,
+  left: 20,
+  right: 20,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+fullScreenPlayButton: {
+  position: 'absolute',
+  alignSelf: 'center',
+  top: '45%',
+  zIndex: 10,
+},
+timeText: { color: 'white', fontSize: 14, width: 40, textAlign: 'center' }
+
 });
 
 export default CoursePlayerScreen;
