@@ -473,7 +473,7 @@ export const logoutAction = createAsyncThunk(
       const storedToken = await AsyncStorage.getItem("access_token");
       const rawToken = state.auth?.token || storedToken;
       const token = rawToken?.replace(/^['"]+|['"]+$/g, "");
-
+console.log("tok",token)
       const response = await api.post(
         endpoints.LOGOUT, // e.g., "/auth/logout/"
         { refresh }, // payload

@@ -128,7 +128,7 @@ const Dashboard = () => {
             <Icon name="clock" size={20} color="#6C63FF" />
             <Text style={styles.statTitle}>Total Hours Spent</Text>
             <Text style={[styles.statValue, { color: "#6C63FF" }]}>
-              {DashBoarduserData?.stats?.totalHours || 0} h
+              {DashBoarduserData?.stats?.totalHours || 0} hr
             </Text>
           </View>
           <View style={styles.card}>

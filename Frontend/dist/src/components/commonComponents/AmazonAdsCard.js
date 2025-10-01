@@ -103,21 +103,31 @@ export default function AdsCarousel({
     };
   }, []);
 
-  const renderItem = ({ item }) => (
+const renderItem = ({ item }) => (
     <View style={{ width: itemWidth, height: itemHeight }}>
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => {
           console.log('Ad pressed:', item);
         }}
-        style={{ width: '100%', height: '100%' }}
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          borderRadius: 12, // Add borderRadius here
+          overflow: 'hidden' // Add overflow hidden here
+        }}
       >
         <Image
           source={{ uri: item.image }}
-          style={{ width: '100%', height: '100%' }}
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            // borderRadius: 12 // Remove from here or keep it
+          }}
           resizeMode="cover"
         />
         
+        {/* Rest of your code remains the same */}
         {/* Gradient Overlay */}
         <View style={styles.gradientOverlay} />
         

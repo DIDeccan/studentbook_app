@@ -64,7 +64,7 @@ export const MainContentHome = createAsyncThunk(
           Authorization: `Bearer ${token}`, 
         },
       });
-//console.log(response,"=================res===============")
+console.log(response,"=================res===============")
       if (response) {
         return fulfillWithValue(response.data);
       } else {
@@ -256,18 +256,18 @@ builder.addCase(getDemoData.rejected, (state, action: any) => {
       state.error = action.payload?.message || 'getting data failed';
     });
         builder.addCase(trackingVideoApi.pending, state => {
-          state.loading = true;
+        //  state.loading = true;
           state.message = null;
         });
     
         builder.addCase(trackingVideoApi.fulfilled, (state, action) => {
-          state.loading = false;
+         // state.loading = false;
           state.message =
             action.payload?.message || 'Tracking video successfully';
         });
     
         builder.addCase(trackingVideoApi.rejected, state => {
-          state.loading = false;
+        //  state.loading = false;
           state.message = 'Tracking video  failed';
         });
 

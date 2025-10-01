@@ -9,7 +9,6 @@ import LoginScreen from '../screens/auth/login/LoginScreen';
 import BottomTabNavigations from './BottomTabNavigation';
 import ContentSection from '../screens/chooseContant/ContentSection';
 import MathSubject from '../screens/subjects/MathSubject';
-import EnglishSubject from '../screens/subjects/EnglishSbject';
 import TeluguSubject from '../screens/subjects/TeluguSubject';
 import PrivacyPolicyScreen from '../screens/profileSection/PrivacyPolicyScreen';
 import EditProfile from '../screens/profileSection/EditProfile';
@@ -41,7 +40,6 @@ const Navigations = () => {
       />
       <Stack.Screen name="ContentSection" component={ContentSection} />
       <Stack.Screen name="MathsSubject" component={MathSubject} />
-      <Stack.Screen name="EnglishSubject" component={EnglishSubject} />
       <Stack.Screen name="TeluguSubject" component={TeluguSubject} />
       <Stack.Screen
         name="PrivacyPolicyScreen"

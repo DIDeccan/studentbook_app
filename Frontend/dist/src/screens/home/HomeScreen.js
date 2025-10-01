@@ -27,9 +27,7 @@ const HomeScreen = ({ navigation }) => {
   const colors = themeMode === 'dark' ? darkColors : lightColors;
   const Contentdata = useSelector((state) => state.demoData.mainContentData)
   const { loading } = useSelector((state) => state.demoData)
-  //  console.log(Contentdata,"==============content====")
   const isFocused = useIsFocused();
-
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -41,6 +39,7 @@ const HomeScreen = ({ navigation }) => {
       if (studentId && classId) {
         try {
           let result = await dispatch(MainContentHome({ student_id: studentId, class_id: classId })).unwrap();
+          console.log(result,"res")
         } catch (err) {
           console.warn('MainContentHome API Error:', err);
         }
@@ -74,34 +73,61 @@ const HomeScreen = ({ navigation }) => {
     } else if (item.name === "Current Affairs") {
       return "article";
     } else {
-      return "book"; // default fallback icon
+      return "book";
     }
   };
 
+  const getTagColor = (tagColor) => {
+    const colorMap = {
+      'primary': '#4361EE',
+      'success': '#4CAF50',
+      'secondary': '#6C757D',
+      'danger': '#DC3545',
+      'warning': '#FFC107',
+      'info': '#17A2B8'
+    };
+    return colorMap[tagColor] || '#4361EE';
+  };
+
   const PlaceHolderImage = 'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png'
+  
   const renderContentItem = ({ item }) => {
     return (
       <TouchableOpacity
-        style={[styles.contentCard, { backgroundColor: colors.cardBackground }]}
+        style={[styles.contentCard, { 
+          backgroundColor: '#FFFFFF',
+        }]}
         onPress={() => contentSelection(item)}
         activeOpacity={0.7}
       >
+        <View style={styles.cardHeader}>
+          <View style={[styles.tag, { backgroundColor: getTagColor(item.tagColor) }]}>
+            <Text style={styles.tagText}>{item.sub_title}</Text>
+          </View>
+          <View style={[styles.iconContainer, { backgroundColor: getTagColor(item.tagColor) }]}>
+            <MaterialIcons name={getIconName(item)} size={20} color="white" />
+          </View>
+        </View>
+        
         <View style={styles.imageContainer}>
           <Image
             source={{ uri: item.image || PlaceHolderImage }}
             style={styles.contentImage}
           />
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            colors={['transparent', 'rgba(0,0,0,0.1)']}
             style={styles.imageGradient}
           />
-          <View style={styles.iconContainer}>
-            <MaterialIcons name={getIconName(item)} size={20} color="white" />
-          </View>
         </View>
-        <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
-          {item.name}
-        </Text>
+        
+        <View style={styles.cardContent}>
+          <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={[styles.contentDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+            {item.description}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -122,10 +148,6 @@ const HomeScreen = ({ navigation }) => {
             </Text>
           </View>
           <View style={styles.headerRight}>
-            {/* <TouchableOpacity style={styles.iconButton}>
-              <Fontisto name="bell" size={22} color={colors.text} />
-              <View style={[styles.notificationBadge, { backgroundColor: colors.primary }]} />
-            </TouchableOpacity> */}
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => dispatch(toggleTheme())}
@@ -177,83 +199,35 @@ const HomeScreen = ({ navigation }) => {
           {/* Content Sections */}
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                My Content
-              </Text>
-              <TouchableOpacity>
-                <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
-              </TouchableOpacity>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  My Content
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                  Explore your learning materials
+                </Text>
+              </View>
             </View>
 
             <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              scrollEnabled={false}
               data={Contentdata}
               renderItem={renderContentItem}
               keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.contentList}
               ListEmptyComponent={
                 loading ? (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SH(50) }}>
+                  <View style={styles.emptyContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
                   </View>
                 ) : (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: SH(50) }}>
+                  <View style={styles.emptyContainer}>
                     <Text style={{ color: colors.text }}>No Content Available</Text>
                   </View>
                 )
               }
             />
           </View>
-
-          <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Continue Watching
-              </Text>
-              <TouchableOpacity>
-                <Ionicons name="arrow-forward" size={SF(16)} color="#4361EE" />
-              </TouchableOpacity>
-            </View>
-            <HalfWatchedVideos />
-            {/* <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={ContentData.slice(0, 4)}
-              renderItem={renderContentItem}
-              keyExtractor={item => item.id.toString()}
-              contentContainerStyle={styles.contentList}
-            /> */}
-
-          </View>
-
-
-          {/* Featured Section */}
-          {/* <View style={[styles.featuredContainer, { backgroundColor: colors.cardBackground }]}>
-            <View style={styles.featuredHeader}>
-              <MaterialIcons name="featured-play-list" size={24} color={colors.primary} />
-              <Text style={[styles.featuredTitle, { color: colors.text }]}>
-                Featured Content
-              </Text>
-            </View>
-            <View style={styles.featuredContent}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bGVhcm5pbmd8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60' }}
-                style={styles.featuredImage}
-              />
-              <View style={styles.featuredTextContainer}>
-                <Text style={[styles.featuredContentTitle, { color: colors.text }]}>
-                  Advanced Mathematics
-                </Text>
-                <Text style={[styles.featuredContentDesc, { color: colors.textSecondary }]} numberOfLines={2}>
-                  Master complex concepts with our comprehensive guide to advanced mathematics.
-                </Text>
-                <TouchableOpacity style={[styles.featuredButton, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.featuredButtonText}>Start Learning</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View> */}
         </ScrollView>
       </View>
     </ContainerComponent>
@@ -300,14 +274,6 @@ const styles = StyleSheet.create({
     padding: SW(8),
     marginLeft: SW(10),
     position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: SW(6),
-    right: SW(6),
-    width: SW(8),
-    height: SW(8),
-    borderRadius: SW(4),
   },
   heroContainer: {
     marginHorizontal: SW(15),
@@ -361,39 +327,58 @@ const styles = StyleSheet.create({
     marginBottom: SH(25),
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: SW(20),
-    marginBottom: SH(15),
+    marginBottom: SH(20),
   },
   sectionTitle: {
-    fontSize: SF(18),
+    fontSize: SF(20),
     fontWeight: 'bold',
+    marginBottom: SH(4),
   },
-  seeAllText: {
+  sectionSubtitle: {
     fontSize: SF(14),
-    fontWeight: '500',
   },
   contentList: {
-    paddingHorizontal: SW(15),
+    paddingHorizontal: SW(20),
   },
   contentCard: {
-    width: SW(180),
-    marginRight: SW(15),
     borderRadius: SH(12),
     overflow: 'hidden',
-    // elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    marginBottom: SH(15),
     borderWidth: 1,
-
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: SW(12),
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+  },
+  tag: {
+    paddingHorizontal: SW(8),
+    paddingVertical: SH(4),
+    borderRadius: SH(12),
+  },
+  tagText: {
+    color: 'white',
+    fontSize: SF(10),
+    fontWeight: '600',
+  },
+  iconContainer: {
+    width: SW(32),
+    height: SW(32),
+    borderRadius: SW(16),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageContainer: {
+    height: SH(160),
     position: 'relative',
-    height: SH(120),
   },
   contentImage: {
     height: '100%',
@@ -404,75 +389,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
+    height: '30%',
   },
-  iconContainer: {
-    position: 'absolute',
-    bottom: SW(8),
-    left: SW(8),
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: SW(12),
-    padding: SW(4),
+  cardContent: {
+    padding: SW(16),
   },
   contentTitle: {
-    fontSize: SF(13),
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingVertical: SH(10),
-    paddingHorizontal: SW(5),
-  },
-  featuredContainer: {
-    marginHorizontal: SW(15),
-    marginBottom: SH(25),
-    borderRadius: SH(15),
-    padding: SW(15),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  featuredHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SH(15),
-  },
-  featuredTitle: {
-    fontSize: SF(18),
-    fontWeight: 'bold',
-    marginLeft: SW(8),
-  },
-  featuredContent: {
-    flexDirection: 'row',
-  },
-  featuredImage: {
-    width: SW(100),
-    height: SH(120),
-    borderRadius: SH(10),
-  },
-  featuredTextContainer: {
-    flex: 1,
-    marginLeft: SW(15),
-    justifyContent: 'space-between',
-  },
-  featuredContentTitle: {
     fontSize: SF(16),
     fontWeight: 'bold',
-    marginBottom: SH(5),
+    marginBottom: SH(6),
   },
-  featuredContentDesc: {
-    fontSize: SF(13),
-    marginBottom: SH(10),
-  },
-  featuredButton: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: SW(15),
-    paddingVertical: SH(8),
-    borderRadius: SH(15),
-  },
-  featuredButtonText: {
-    color: 'white',
+  contentDescription: {
     fontSize: SF(12),
-    fontWeight: '600',
+    lineHeight: SF(16),
+  },
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: SH(50),
   },
 });

@@ -5,12 +5,13 @@ from rest_framework import status,permissions
 from rest_framework import generics
 from studentbookfrontend.models import *
 from studentbookfrontend.serializers.course_management_serilizers import *
-from studentbookfrontend.helper.api_response import api_response,parse_duration
+from studentbookfrontend.helper.api_response import api_response,parse_duration,parse_duration_mmss
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum, F, ExpressionWrapper, DurationField
 from django.db.models.functions import Cast
 from django.db.models import Prefetch
-
+import logging
+logger = logging.getLogger(__name__)
 
 
 #Main Content View
@@ -152,9 +153,9 @@ class MainContentView(APIView):
 
 class SubjectList(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    def get(self, request,student_id,class_id):
-        student_class = get_object_or_404(Class, id=class_id)
-        if not student_class:
+    def get(self, request, student_id, class_id):
+        student_class = Class.objects.get(id=class_id)
+        if not student_class:   
             return api_response(
                 message="Class not found",
                 message_type="error",
@@ -172,7 +173,24 @@ class SubjectList(APIView):
         # 1️⃣ Fetch all subjects for the class in one query
         subjects = Subject.objects.filter(course_id=class_id).order_by("id")
 
-        # 2️⃣ Aggregate watched duration for all subjects in one query
+        # 2️⃣ Fetch subchapters for all subjects (avoid N+1 queries)
+        subchapters = Subchapter.objects.filter(subject__in=subjects).select_related(
+            "subject"
+        )
+
+        # 3️⃣ Aggregate total video durations per subject
+        total_map = {}
+        for sc in subchapters:
+            total_map[sc.subject.id] = total_map.get(sc.subject.id, timedelta(0)) + parse_duration_mmss(sc.vedio_duration)
+
+        # 4️⃣ Fetch all video logs for student (avoid N+1)
+        video_logs = VideoTrackingLog.objects.filter(
+            student=student,
+            subchapter__subject__in=subjects
+        ).select_related("subchapter", "subchapter__subject")
+
+      
+
         watched_durations = (
             VideoTrackingLog.objects.filter(student=student)
             .values("subchapter__chapter__subject_id")
@@ -182,65 +200,29 @@ class SubjectList(APIView):
             wd["subchapter__chapter__subject_id"]: wd["total_watched"]
             for wd in watched_durations
         }
-
-        # 3️⃣ Aggregate total video durations for all subchapters in one query
-        subchapter_durations = (
-            Subchapter.objects.filter(subject__in=subjects)
-            .values("subject_id")
-            .annotate(
-                total_duration=Sum(
-                    ExpressionWrapper(
-                        Cast("vedio_duration", DurationField()), DurationField()
-                    )
-                )
-            )
-        )
-        total_map = {
-            sd["subject_id"]: sd["total_duration"] for sd in subchapter_durations
-        }
-
-        # 4️⃣ Static extras (can also be added in Subject model)
+        
+        # 6️⃣ Static extras
         extras = {
-            "Mathematics": {
-
-                "color": "#FF6B6B"
-            },
-            "English": {
-                "color": "#4ECDC4"
-            },
-            "Telugu": {
-
-                "color": "#FFD166"
-            },
-            "General Science": {
-                "color": "#06D6A0"
-            },
-            "Social Studies": {
-                "color": "#118AB2"
-            },
-            "Hindi": {
-                "color": "#073B4C"
-            },
+            "Mathematics": {"content": "Algebra, Geometry, Calculus and more", "icon": "calculator", "color": "#FF6B6B"},
+            "English": {"content": "Grammar, Literature, Writing skills", "icon": "book", "color": "#4ECDC4"},
+            "Telugu": {"content": "Language, Poetry, Literature", "icon": "language", "color": "#FFD166"},
+            "General Science": {"content": "Physics, Chemistry, Biology", "icon": "flask", "color": "#06D6A0"},
+            "Social Studies": {"content": "Ancient, Medieval, Modern history", "icon": "hourglass", "color": "#118AB2"},
+            "Hindi": {"content": "Grammar, Literature, Writing", "icon": "pen", "color": "#073B4C"},
         }
 
-        # 5️⃣ Final response
+        # 7️⃣ Build response
         data = []
         for subject in subjects:
-            watched_time = watched_map.get(subject.id, timedelta(0)) or timedelta(0)
-            total_time = total_map.get(subject.id, timedelta(0)) or timedelta(0)
+            total_time = total_map.get(subject.id, timedelta(0))
+            watched_time = watched_map.get(subject.id, timedelta(0))
 
-            watched_seconds = watched_time.total_seconds()
             total_seconds = total_time.total_seconds()
+            watched_seconds = watched_time.total_seconds()
 
-            completion_percentage = (
-                (watched_seconds / total_seconds) * 100 if total_seconds > 0 else 0
-            )
+            completion_percentage = (watched_seconds / total_seconds * 100) if total_seconds > 0 else 0
 
-            subject_extra = extras.get(subject.name, {
-                "content": "",
-                "icon": "book",
-                "color": "#000000"
-            })
+            subject_extra = extras.get(subject.name, {"content": "", "icon": "book", "color": "#000000"})
 
             data.append({
                 "id": subject.id,
@@ -249,10 +231,13 @@ class SubjectList(APIView):
                 "image": request.build_absolute_uri(subject.image.url) if subject.image else None,
                 "class_id": student_class.id,
                 "class_name": student_class.name,
-                "icon": subject.icon,
+                "icon": subject.icon or subject_extra["icon"],
                 "progressPercentage": round(completion_percentage, 2),
                 "color": subject_extra["color"],
             })
+
+            # Logging for production debug
+            logger.debug(f"Subject: {subject.name}, Watched: {watched_seconds}s, Total: {total_seconds}s, Completion: {completion_percentage:.2f}%")
 
         return api_response(
             message="Subjects fetched successfully",
