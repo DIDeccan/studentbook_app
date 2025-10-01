@@ -11,7 +11,7 @@ import calendar
 from django.utils.timezone import now, timedelta
 
 class DashboardAPIView(APIView):
-    # permission_classes = [IsAuthenticated]  # optional, but recommended
+    permission_classes = [IsAuthenticated] 
 
     def get(self, request, student_id, class_id):
         try:
@@ -85,6 +85,7 @@ class DashboardAPIView(APIView):
         )
 
 class TopicInterestChartAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, student_id, class_id):
         try:
             user = Student.objects.get(id=student_id)
@@ -139,6 +140,7 @@ class TopicInterestChartAPIView(APIView):
   
  
 class WeeklyLearningTrendsAPI(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, student_id, class_id):
 
         try:
@@ -150,53 +152,59 @@ class WeeklyLearningTrendsAPI(APIView):
                 message_type="error",
                 status_code=404
             )
-        # ✅ Step 1: Get all subjects in this class
+
+        #  Step 1: Week range
         today = now().date()
-        start_of_week = today - timedelta(days=today.weekday())  # Monday start
+        start_of_week = today - timedelta(days=today.weekday())  # Monday
         end_of_week = start_of_week + timedelta(days=6)
+
+        #  Step 2: Subjects
         all_subjects = list(
-            Subject.objects.filter(course=class_obj).values_list("name", flat=True).order_by("id")
+            Subject.objects.filter(course=class_obj)
+            .values_list("name", flat=True)
+            .order_by("id")
         )
         week_days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-        # ✅ Step 2: Initialize result with all subjects = 0
-        days_data = {day: {sub: 0 for sub in all_subjects} for day in week_days}
-
-        # ✅ Step 3: Fetch logs
-        logs = (
-            VideoTrackingLog.objects
-            .filter(student=user, subchapter__course__id=class_id,created_at__date__range=[start_of_week, end_of_week])
+        # Step 3: Query DB once - aggregate durations 
+        sessions = (
+            VideoWatchSession.objects
+            .filter(student=user, subchapter__course__id=class_id,started_at__date__range=[start_of_week, end_of_week])
             .values(
                 "subchapter__chapter__subject__name",
-                "created_at__week_day"   # 1=Sunday, 7=Saturday
+                "started_at__week_day"   # 1=Sunday, 7=Saturday
             )
             .annotate(
-                total_duration=Sum(
-                    ExpressionWrapper(F("watched_duration"), output_field=DurationField())
-                )
+                total_duration=Sum("watched_duration")
             )
         )
 
-        # ✅ Step 4: Fill in actual values (minutes)
-        for log in logs:
-            subject = log["subchapter__chapter__subject__name"]
-            weekday_index = log["created_at__week_day"]  # 1=Sunday
+       
+        #  Step 4: Initialize result with 0s
+        days_data = {day: {sub: 0 for sub in all_subjects} for day in week_days}
+
+        #  Step 5: Fill actual data
+        for s in sessions:
+            subject = s["subchapter__chapter__subject__name"]
+            weekday_index = s["started_at__week_day"]  # 1=Sunday
             day_name = week_days[weekday_index - 1]
 
-            if log["total_duration"]:
-                minutes = int(log["total_duration"].total_seconds() // 60)
-                days_data[day_name][subject] += minutes
+            if s["total_duration"]:  # check not None
+                minutes = s["total_duration"].total_seconds() / 60
+                days_data[day_name][subject] = round(minutes, 2)
 
-        # ✅ Step 5: Convert minutes → percentages
-        percentage_data = {}
-        for day, subjects in days_data.items():
-            total_minutes = sum(subjects.values())
-            if total_minutes > 0:
-                percentage_data[day] = {
-                    sub: round((minutes / total_minutes) * 100, 2) for sub, minutes in subjects.items()
+        #  Step 6: Convert minutes → percentages (inline, no extra loops)
+        percentage_data = {
+            day: (
+                {
+                    sub: round((minutes / total) * 100, 2)
+                    for sub, minutes in subjects.items()
                 }
-            else:
-                percentage_data[day] = {sub: 0 for sub in subjects}
+                if (total := sum(subjects.values())) > 0
+                else {sub: 0 for sub in subjects}
+            )
+            for day, subjects in days_data.items()
+        }
 
         return api_response(
             message="Weekly learning trends fetched successfully",
@@ -204,61 +212,4 @@ class WeeklyLearningTrendsAPI(APIView):
             status_code=200,
             data={"days": percentage_data}
         )
-
-# class WeeklyLearningTrendsAPI(APIView):
-#     def get(self, request, student_id, class_id):
-
-#         try:
-#             user = Student.objects.get(id=student_id)
-#             class_obj = Class.objects.get(id=class_id)
-#         except (Student.DoesNotExist, Class.DoesNotExist):
-#             return api_response(
-#                 message="User or Class not found",
-#                 message_type="error",
-#                 status_code=404
-#             )
-#         # ✅ Step 1: Get all subjects in this class
-
-#         all_subjects = list(
-#             Subject.objects.filter(course=class_obj).values_list("name", flat=True).order_by("id")
-#         )
-#         week_days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-
-#         # ✅ Step 2: Initialize result with all subjects = 0
-#         days_data = {day: {sub: 0 for sub in all_subjects} for day in week_days}
-
-#         # ✅ Step 3: Fetch logs
-#         logs = (
-#             VideoTrackingLog.objects
-#             .filter(student=user, subchapter__course__id=class_id)
-#             .values(
-#                 "subchapter__chapter__subject__name",
-#                 "created_at__week_day"   # 1=Sunday, 7=Saturday
-#             )
-#             .annotate(
-#                 total_duration=Sum(
-#                     ExpressionWrapper(F("watched_duration"), output_field=DurationField())
-#                 )
-#             )
-#         )
-
-#         # ✅ Step 4: Fill in actual values
-#         for log in logs:
-#             subject = log["subchapter__chapter__subject__name"]
-#             weekday_index = log["created_at__week_day"]  # 1=Sunday
-#             day_name = week_days[weekday_index - 1]
-
-#             if log["total_duration"]:
-#                 minutes = int(log["total_duration"].total_seconds() // 60)
-#                 days_data[day_name][subject] += minutes
-
-#         # return Response({"days": days_data})
-#         return api_response(
-#             message="Weekly learning trends fetched successfully",
-#             message_type="success",
-#             status_code=200,
-#             data={"days": days_data}
-#         )
-
-
 
