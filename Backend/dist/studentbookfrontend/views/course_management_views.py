@@ -419,6 +419,8 @@ class VideoTrackingView(APIView):
 
         watched_duration = timedelta(seconds=watched_seconds)
 
+        print('watched_seconds',watched_seconds)
+        print('watched_duration',watched_duration)
         # --- Update or create safely inside transaction ---
         with transaction.atomic():
             tracking_log, created = VideoTrackingLog.objects.select_for_update().get_or_create(
@@ -427,30 +429,30 @@ class VideoTrackingView(APIView):
                 defaults={"watched_duration": watched_duration, "completed": False},
             )
 
-            today = timezone.now().date()
-            session_log,is_created = VideoWatchSession.objects.update_or_create(
-                student=student,
-                subchapter=subchapter,
-                started_at__date=today,  # same day
-                defaults={"watched_duration": watched_duration},
-            )
+                # update only if student watched more than before
+            if watched_duration > tracking_log.watched_duration:
+                today = timezone.now().date()
 
+                session_log, is_created = VideoWatchSession.objects.update_or_create(
+                    student=student,
+                    subchapter=subchapter,
+                    started_at__date=today,
+                    defaults={"watched_duration": watched_duration},  
+                )
 
-            # if is_created:
-            #     session_log.watched_duration = watched_duration
-            # else:
+                # if session_log exists, update only if new progress > old
+                if not is_created and watched_duration > session_log.watched_duration:
+                    session_log.watched_duration = watched_duration - session_log.watched_duration
+                    session_log.save(update_fields=["watched_duration"])
+                print('session_log', session_log.watched_duration)
+                print('session_log', session_log)
             
-            #     if watched_duration > tracking_log.watched_duration:
-            #         session_log.watched_duration = session_log.watched_duration + watched_duration - tracking_log.watched_duration
-            #     session_log.save()
             
 
             if not created:
-                # ✅ Either increment OR take max to avoid regress
                 tracking_log.watched_duration = max(tracking_log.watched_duration, watched_duration)
 
-            # --- Completion logic ---
-            video_duration = parse_duration(subchapter.vedio_duration)  # 👈 rename field to `video_duration`
+            video_duration = parse_duration(subchapter.vedio_duration)  
             if video_duration:
                 tracking_log.watched_duration = min(tracking_log.watched_duration, video_duration)
 
@@ -459,11 +461,15 @@ class VideoTrackingView(APIView):
                 tracking_log.completed = False
             if is_favourate is not None:
                 tracking_log.is_favourate = is_favourate
-            # else:
-            #     tracking_log.completed = False
+
+
+
 
             tracking_log.save()
 
+            print('tra',tracking_log)
+
+            
         # --- Response ---
         return Response(
             {
