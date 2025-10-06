@@ -669,7 +669,7 @@ const themedStyles = (colors) => StyleSheet.create({
     flex: 1,
     height: 40,
     marginHorizontal: 12,
-    zIndex:1
+    zIndex:10
   },
   timeText: {
     color: 'white',
@@ -693,8 +693,8 @@ const themedStyles = (colors) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    //borderBottomWidth: 1,
+   // borderBottomColor: colors.border,
   },
   backButton: {
     padding: 8,
@@ -705,7 +705,7 @@ const themedStyles = (colors) => StyleSheet.create({
     color: colors.text,
   },
   placeholder: {
-    width: 32,
+   // width: 32,
   },
   loaderContainer: {
     flex: 1,
@@ -761,11 +761,11 @@ const themedStyles = (colors) => StyleSheet.create({
     marginTop: 8,
   },
   chapterCard: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.background,
     borderRadius: 12,
     marginBottom: 12,
     overflow: 'hidden',
-    borderWidth: 1,
+   // borderWidth: 1,
     borderColor: colors.border,
   },
   chapterHeader: {

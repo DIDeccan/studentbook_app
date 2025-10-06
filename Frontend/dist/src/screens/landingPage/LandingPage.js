@@ -191,7 +191,7 @@ const LandingPage = ({ navigation }) => {
           <Text style={styles.cost}>₹ {item.cost}</Text>
         </View>
         <Text style={styles.description}>
-          {expanded ? item.description : item.description?.slice(0, 100) + '...'}
+          {expanded ? item.discription : item.discription?.slice(0, 100) + '...'}
         </Text>
         <TouchableOpacity onPress={() => setExpanded(!expanded)}>
           <Text style={styles.seeMore}>

@@ -8,7 +8,7 @@ import { ScrollView } from 'react-native';
 import { FlatList } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../../redux/reducer/themeReducer';
-import { darkColors, lightColors } from '../../utils/Colors';
+import Colors, { darkColors, lightColors } from '../../utils/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -18,6 +18,7 @@ import HalfWatchedVideos from '../../components/commonComponents/HalfWatchedVide
 import { MainContentHome } from '../../redux/reducer/demopagereduce';
 import { useIsFocused } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { color } from 'react-native-elements/dist/helpers';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,6 +29,7 @@ const HomeScreen = ({ navigation }) => {
   const Contentdata = useSelector((state) => state.demoData.mainContentData)
   const { loading } = useSelector((state) => state.demoData)
   const isFocused = useIsFocused();
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -39,7 +41,7 @@ const HomeScreen = ({ navigation }) => {
       if (studentId && classId) {
         try {
           let result = await dispatch(MainContentHome({ student_id: studentId, class_id: classId })).unwrap();
-          console.log(result,"res")
+         // console.log(result,"res")
         } catch (err) {
           console.warn('MainContentHome API Error:', err);
         }
@@ -100,14 +102,7 @@ const HomeScreen = ({ navigation }) => {
         onPress={() => contentSelection(item)}
         activeOpacity={0.7}
       >
-        <View style={styles.cardHeader}>
-          <View style={[styles.tag, { backgroundColor: getTagColor(item.tagColor) }]}>
-            <Text style={styles.tagText}>{item.sub_title}</Text>
-          </View>
-          <View style={[styles.iconContainer, { backgroundColor: getTagColor(item.tagColor) }]}>
-            <MaterialIcons name={getIconName(item)} size={20} color="white" />
-          </View>
-        </View>
+    
         
         <View style={styles.imageContainer}>
           <Image
@@ -119,14 +114,29 @@ const HomeScreen = ({ navigation }) => {
             style={styles.imageGradient}
           />
         </View>
-        
+            <View style={styles.cardHeader}>
+          <View style={[styles.tag, { backgroundColor: getTagColor(item.tagColor) }]}>
+            <Text style={styles.tagText}>{item.sub_title}</Text>
+          </View>
+          <View style={[styles.iconContainer, { backgroundColor: getTagColor(item.tagColor) }]}>
+            <MaterialIcons name={getIconName(item)} size={20} color="white" />
+          </View>
+        </View>
         <View style={styles.cardContent}>
           <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={[styles.contentDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+          {/* <Text style={[styles.contentDescription, { color: colors.textSecondary }]} numberOfLines={2}>
             {item.description}
-          </Text>
+          </Text> */}
+             <Text style={styles.discription}>
+                    {expanded ? item.description : item.description?.slice(0, 100) + '...'}
+                  </Text>
+                  <TouchableOpacity onPress={() => setExpanded(!expanded)}>
+                    <Text style={[styles.seeMore,{color:colors.primary}]}>
+                      {expanded ? 'See less' : 'See more'}
+                    </Text>
+                  </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -351,13 +361,15 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: SW(12),
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 2,
+    alignItems: 'center',
+    paddingHorizontal: SW(12),
+    paddingTop: SH(12),
+    //borderWidth:1
+   // position: 'absolute',
+    // top: 0,
+    // left: 0,
+    // right: 0,
+    // zIndex: 2,
   },
   tag: {
     paddingHorizontal: SW(8),
@@ -392,7 +404,9 @@ const styles = StyleSheet.create({
     height: '30%',
   },
   cardContent: {
-    padding: SW(16),
+    paddingHorizontal: SW(16),
+    paddingBottom: SH(16),
+
   },
   contentTitle: {
     fontSize: SF(16),
@@ -408,4 +422,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SH(50),
   },
+    seeMore: {
+      marginTop: 8,
+     // color: colors.primary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
 });

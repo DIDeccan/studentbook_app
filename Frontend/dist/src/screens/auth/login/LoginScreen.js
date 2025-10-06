@@ -58,11 +58,12 @@ const LoginScreen = props => {
         ).unwrap();
          
         console.log('Login success:', login);
-     await AsyncStorage.setItem("access_token", login.access);
+    await AsyncStorage.setItem("access_token", login.access);
 await AsyncStorage.setItem("refresh_token", login.refresh);
 await AsyncStorage.setItem("studentId"   ,String(login?.student_id))
 await AsyncStorage.setItem("classId",String(login?.class_id))
 await AsyncStorage.setItem("isPaid", JSON.stringify(login?.is_paid))
+await AsyncStorage.setItem("isRegistered", "true");
 //await AsyncStorage.setItem("refresh_token", login.refresh);
     Toast.show({
         type: "success",

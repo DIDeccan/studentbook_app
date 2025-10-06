@@ -1,47 +1,55 @@
-import { StyleSheet, Text, View, Image } from 'react-native';
-import React,{useEffect} from 'react';
-import { SW, SH, SF } from '../../utils/dimensions';
-import { loginImg, logoImg, Spalsh_Logo, Spalsh_Logo1 } from '../../images/index.js';
+import { StyleSheet, View, Image } from 'react-native';
+import React, { useEffect } from 'react';
+import { SW, SH } from '../../utils/dimensions';
+import { logoImg } from '../../images/index.js';
 import ContainerComponent from '../../components/commonComponents/Container.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSelector } from 'react-redux';
 
+const SplashScreen = ({ navigation }) => {
+  const checkInitialPage = async () => {
+    try {
+      let access = await AsyncStorage.getItem('access_token');
+      let isPaid = await AsyncStorage.getItem('isPaid'); // "true" or "false"
+      let isRegistered = await AsyncStorage.getItem('isRegistered'); // "true" after registration
 
-const SplashScreen = ({navigation}) => {
-  const token = useSelector((state) => state.auth.token);
-  const intialPage = async()=>{
-  let access = await AsyncStorage.getItem('access_token')
-    let isPaid = await AsyncStorage.getItem('isPaid')
-console.log(isPaid,"ispaid")
-  console.log("tokenS",access)
-if(access !== null && isPaid == 'true'){
-   navigation.replace('BottomTabNavigations');
-}else if(access !== null){
-    navigation.replace('SignUpScreen');
-}
-    }
-  useEffect(()=>{
-    intialPage()
-    })
-    
-   useEffect(() => {
-    const timer = setTimeout(() => {
+      console.log("Token:", access);
+      console.log("isPaid:", isPaid);
+      console.log("isRegistered:", isRegistered);
+
+      if (access && isPaid === 'true') {
+        // ✅ Logged in + Paid
+        navigation.replace('BottomTabNavigations');
+      } else if (isRegistered === 'true' && isPaid !== 'true') {
+        // ✅ Registered but not paid → Signup screen
+        navigation.replace('SignUpScreen');
+      } else if (isRegistered === 'true' && isPaid === 'true' && !access) {
+        // ✅ Registered + Paid but logged out → Login screen
+        navigation.replace('LoginScreen');
+      } else {
+        // ✅ First-time install → Landing
+        navigation.replace('SwipperScreen');
+      }
+    } catch (e) {
+      console.log("Error reading AsyncStorage", e);
       navigation.replace('SwipperScreen');
-    }, 4000);
-    return () => clearTimeout(timer); // cleanup
-  }, [navigation]);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkInitialPage();
+    }, 2000); // splash delay
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <ContainerComponent>
       <View style={styles.setbgimage}>
-        <View>
-          <Image
-            style={styles.valuxlogoimg}
-            resizeMode="contain"
-            source={logoImg}
-          />
-          {/* <Text style={{fontSize:SF(20),textAlign:'center'}}>Student Book</Text> */}
-        </View>
+        <Image
+          style={styles.valuxlogoimg}
+          resizeMode="contain"
+          source={logoImg}
+        />
       </View>
     </ContainerComponent>
   );
@@ -53,11 +61,10 @@ const styles = StyleSheet.create({
   valuxlogoimg: {
     width: SW(200),
     height: SH(200),
-    resizeMode:'contain'
+    resizeMode: 'contain',
   },
   setbgimage: {
     flex: 1,
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },

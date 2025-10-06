@@ -522,6 +522,7 @@ const SignUpScreen = ({ navigation }) => {
                     await AsyncStorage.setItem("refresh_token", result.payload.data.refresh)
                     await AsyncStorage.setItem("access_token", result.payload.data.access)
                     await AsyncStorage.setItem("isPaid", JSON.stringify(result.payload.data.is_paid))
+                     await AsyncStorage.setItem("isRegistered", "true");
                     await AsyncStorage.setItem("amount", JSON.stringify(price))
                     await AsyncStorage.setItem("classID", JSON.stringify(value))
                     setOtpMessage(result.payload.message);

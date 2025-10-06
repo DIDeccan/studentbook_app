@@ -64,7 +64,7 @@ export const MainContentHome = createAsyncThunk(
           Authorization: `Bearer ${token}`, 
         },
       });
-console.log(response,"=================res===============")
+//console.log(response,"=================res===============")
       if (response) {
         return fulfillWithValue(response.data);
       } else {
