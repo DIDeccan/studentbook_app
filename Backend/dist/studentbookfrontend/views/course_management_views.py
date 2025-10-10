@@ -388,13 +388,13 @@ class VideoTrackingView(APIView):
         try:
             student_class = Class.objects.get(id=class_id)
         except Class.DoesNotExist:
-            return api_response("Class not found", "error", status.HTTP_404_NOT_FOUND)
+            return api_response(message="Class not found", message_type="error", status_code=status.HTTP_404_NOT_FOUND)
 
         # --- Validate student ---
         try:
             student = Student.objects.get(id=student_id, student_class=student_class)
         except Student.DoesNotExist:
-            return api_response("Student not found", "error", status.HTTP_404_NOT_FOUND)
+            return api_response(message="Student not found",message_type= "error", status_code=status.HTTP_404_NOT_FOUND)
 
         # --- Validate input ---
         subchapter_id = request.data.get("subchapter_id")
@@ -402,25 +402,23 @@ class VideoTrackingView(APIView):
         is_favourate = request.data.get("is_favourate")
 
         if not subchapter_id:
-            return api_response("subchapter_id is required", "error", status.HTTP_400_BAD_REQUEST)
+            return api_response(message="subchapter_id is required",message_type= "error", status_code=status.HTTP_400_BAD_REQUEST)
 
         try:
             watched_seconds = int(watched_seconds)
             if watched_seconds < 0 or watched_seconds > 36000:  # Limit to 10 hours
-                return api_response("Invalid watched duration", "error", status.HTTP_400_BAD_REQUEST)
+                return api_response(message="Invalid watched duration", message_type="error", status_code=status.HTTP_400_BAD_REQUEST)
         except (ValueError, TypeError):
-            return api_response("watched_seconds must be an integer", "error", status.HTTP_400_BAD_REQUEST)
+            return api_response(message="watched_seconds must be an integer", message_type= "error", status_code=status.HTTP_400_BAD_REQUEST)
 
         # --- Validate subchapter ---
         try:
             subchapter = Subchapter.objects.get(id=subchapter_id, course=student_class)
         except Subchapter.DoesNotExist:
-            return api_response("Subchapter not found", "error", status.HTTP_404_NOT_FOUND)
+            return api_response(message="Subchapter not found", message_type="error", status_code=status.HTTP_404_NOT_FOUND)
 
         watched_duration = timedelta(seconds=watched_seconds)
 
-        print('watched_seconds',watched_seconds)
-        print('watched_duration',watched_duration)
         # --- Update or create safely inside transaction ---
         with transaction.atomic():
             tracking_log, created = VideoTrackingLog.objects.select_for_update().get_or_create(
@@ -444,8 +442,7 @@ class VideoTrackingView(APIView):
                 if not is_created and watched_duration > session_log.watched_duration:
                     session_log.watched_duration = watched_duration - session_log.watched_duration
                     session_log.save(update_fields=["watched_duration"])
-                print('session_log', session_log.watched_duration)
-                print('session_log', session_log)
+                print('session_log',session_log.watched_duration)
             
             
 
@@ -462,17 +459,10 @@ class VideoTrackingView(APIView):
             if is_favourate is not None:
                 tracking_log.is_favourate = is_favourate
 
-
-
-
             tracking_log.save()
 
-            print('tra',tracking_log)
-
-            
         # --- Response ---
-        return Response(
-            {
+        data = {
                 "message": "Video tracking updated successfully",
                 "student": student.id,
                 "class": student_class.id,
@@ -481,7 +471,187 @@ class VideoTrackingView(APIView):
                 "watched_duration": str(tracking_log.watched_duration),
                 "completed": tracking_log.completed,
                 "is_favourate": tracking_log.is_favourate,
-            },
-            status=status.HTTP_200_OK,
+            }
+        return api_response(
+            message="Video tracking updated successfully",
+            message_type="success",
+            status_code=status.HTTP_200_OK,
+            data=data
+        )
+
+#general content vedios view
+class GeneralVediosView(APIView):
+
+    def get(self, request, student_id, general_content_id):
+        # ✅ Validate student
+        student = Student.objects.filter(id=student_id).first()
+        if not student:
+            return api_response(
+                message="Student not found",
+                message_type="error",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        # ✅ Validate general content
+        main_content = MainContent.objects.filter(id=general_content_id).first()
+        if not main_content:
+            return api_response(
+                message="Content not found",
+                message_type="error",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        # ✅ Get all videos for this general content
+        general_content_videos = GeneralContentVideo.objects.filter(main_content=general_content_id)
+
+        # ✅ Preload tracking logs to avoid N+1 query
+        video_ids = [video.id for video in general_content_videos]
+        tracking_logs = GeneralContentVideoTrackingLog.objects.filter(
+            student=student,
+            general_content_video_id__in=video_ids
+        )
+        log_map = {log.general_content_video_id: log for log in tracking_logs}
+
+        # ✅ Build response
+        data = []
+        
+        for video in general_content_videos:
+            video_duration = parse_duration(video.vedio_duration) if video.vedio_duration else None
+            tracking_log = log_map.get(video.id)
+            watched_duration = tracking_log.watched_duration if tracking_log else timedelta(seconds=0)
+
+            # Percentage completed
+            percentage_completed = (
+                (watched_duration.total_seconds() / video_duration.total_seconds()) * 100
+                if tracking_log and video_duration and video_duration.total_seconds() > 0
+                else 0
+            )
+
+            data.append({
+                "id": video.id,
+                "video_name": video.video_name,
+                "video_url": video.video_url,
+                "video_duration": str(video_duration) if video_duration else "0:00:00",
+                "watched_duration": str(watched_duration),
+                "completed": tracking_log.completed if tracking_log else False,
+                "percentage_completed": round(percentage_completed, 2),
+                "is_favourate": tracking_log.is_favourate if tracking_log else False,
+                "created_at": video.created_at,
+                "image": video.tumbnail_image.url if video.tumbnail_image else None,
+            })
+        response_data = {
+            "general_content": main_content.title,
+            "videos": data
+        }
+
+        return api_response(
+            message="General content videos fetched successfully",
+            message_type="success",
+            status_code=status.HTTP_200_OK,
+            data=response_data
+        )
+
+
+class GeneralVideoTrackingView(APIView):
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, student_id, general_content_id):
+        """
+        Store or update the watched duration for a video (subchapter).
+        """
+
+        # --- Validate class ---
+        try:
+            general_content = MainContent.objects.get(id=general_content_id)
+        except MainContent.DoesNotExist:
+            return api_response(message="General Content not found",message_type= "error", status_code=status.HTTP_404_NOT_FOUND)
+
+        # --- Validate student ---
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return api_response("Student not found", "error", status.HTTP_404_NOT_FOUND)
+
+        # --- Validate input ---
+        general_vedio_id = request.data.get("general_vedio_id")
+        watched_seconds = request.data.get("watched_seconds", 0)
+        is_favourate = request.data.get("is_favourate")
+
+        if not general_vedio_id:
+            return api_response(message="general_vedio_id is required",message_type= "error",status_code= status.HTTP_400_BAD_REQUEST)
+
+        try:
+            watched_seconds = int(watched_seconds)
+            if watched_seconds < 0 or watched_seconds > 36000:  # Limit to 10 hours
+                return api_response(message="Invalid watched duration", message_type="error", status_code=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError):
+            return api_response("watched_seconds must be an integer", "error" ,status.HTTP_400_BAD_REQUEST)
+
+        # --- Validate subchapter ---
+        try:
+            general_content_vedio = GeneralContentVideo.objects.get(id=general_vedio_id, main_content=general_content)
+        except GeneralContentVideo.DoesNotExist:
+            return api_response(message="GeneralContentVideo not found",message_type= "error", status_code=status.HTTP_404_NOT_FOUND)
+
+        watched_duration = timedelta(seconds=watched_seconds)
+
+        # --- Update or create safely inside transaction ---
+        with transaction.atomic():
+            tracking_log, created = GeneralContentVideoTrackingLog.objects.select_for_update().get_or_create(
+                student=student,
+                general_content_video=general_content_vedio,
+                defaults={"watched_duration": watched_duration, "completed": False},
+            )
+
+                # update only if student watched more than before
+            if watched_duration > tracking_log.watched_duration:
+                today = timezone.now().date()
+
+                session_log, is_created = GeneralContentVideoWatchSession.objects.update_or_create(
+                    student=student,
+                    general_content_video=general_content_vedio,
+                    started_at__date=today,
+                    defaults={"watched_duration": watched_duration},  
+                )
+
+                # if session_log exists, update only if new progress > old
+                if not is_created and watched_duration > session_log.watched_duration:
+                    session_log.watched_duration = watched_duration - session_log.watched_duration
+                    session_log.save(update_fields=["watched_duration"])
+                print('session_log',session_log.watched_duration)
+            
+            
+
+            if not created:
+                tracking_log.watched_duration = max(tracking_log.watched_duration, watched_duration)
+
+            video_duration = parse_duration(general_content_vedio.vedio_duration)  
+            if video_duration:
+                tracking_log.watched_duration = min(tracking_log.watched_duration, video_duration)
+
+                tracking_log.completed = tracking_log.watched_duration >= video_duration
+            else:
+                tracking_log.completed = False
+            if is_favourate is not None:
+                tracking_log.is_favourate = is_favourate
+
+            tracking_log.save()
+
+        data = {
+            "message": "Video tracking updated successfully",
+                "student": student.id,
+                "general_content_vedio_id": general_content_vedio.id,
+                "video_duration": str(video_duration) if video_duration else "0:00:00",  # 👈 keep backward compatibility
+                "watched_duration": str(tracking_log.watched_duration),
+                "completed": tracking_log.completed,
+                "is_favourate": tracking_log.is_favourate,
+        }
+
+        # --- Response ---
+        return api_response(
+            message="Video tracking updated successfully",
+            message_type="success",
+            status_code=status.HTTP_200_OK,
+            data=data
         )
 

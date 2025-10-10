@@ -88,7 +88,7 @@ class TopicInterestChartAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, student_id, class_id):
         try:
-            user = Student.objects.get(id=student_id)
+            student = Student.objects.get(id=student_id)
             class_obj = Class.objects.get(id=class_id)
         except (Student.DoesNotExist, Class.DoesNotExist):
             return api_response(
@@ -97,13 +97,16 @@ class TopicInterestChartAPIView(APIView):
                 status_code=404
             )
 
-        # Fetch all subjects in this class
-        all_subjects = Subject.objects.filter(course=class_obj)  # adjust field name if different
+        # -----------------------------
+        # 1️⃣ Course Subjects
+        # -----------------------------
+        all_subjects = Subject.objects.filter(course=class_obj)
+        all_main_contents = MainContent.objects.all()
 
-        # Aggregate watched duration per subject
-        subject_durations = (
+        # Subchapter video durations per subject
+        subchapter_durations = (
             VideoTrackingLog.objects
-            .filter(student=user)
+            .filter(student=student)
             .values("subchapter__subject__id")
             .annotate(
                 total_duration=Sum(
@@ -112,16 +115,40 @@ class TopicInterestChartAPIView(APIView):
             )
         )
 
-        # Map subject_id -> duration (in seconds)
-        duration_map = {
-            sd["subchapter__subject__id"]: sd["total_duration"].total_seconds()
-            for sd in subject_durations if sd["total_duration"]
-        }
+        # Map: subject_name -> total_seconds
+        duration_map = {}
+        for sd in subchapter_durations:
+            name = sd["subchapter__subject__id"]
+            seconds = sd["total_duration"].total_seconds() if sd["total_duration"] else 0
+            duration_map[name] = duration_map.get(name, 0) + seconds
 
-        # Total across all subjects
+        # -----------------------------
+        # 2️⃣ General Content Categories
+        # -----------------------------
+        # Make sure your MainContent has a title/category like Yoga, Sports, Health
+        general_logs = (
+            GeneralContentVideoTrackingLog.objects
+            .filter(student=student)
+            .values("general_content_video__main_content__title")
+            .annotate(
+                total_duration=Sum(
+                    ExpressionWrapper(F("watched_duration"), output_field=DurationField())
+                )
+            )
+        )
+
+        # Merge general content durations
+        for log in general_logs:
+            category_name = log["general_content_video__main_content__title"]
+            seconds = log["total_duration"].total_seconds() if log["total_duration"] else 0
+            duration_map[category_name] = duration_map.get(category_name, 0) + seconds
+
+        # -----------------------------
+        # 3️⃣ Calculate percentages
+        # -----------------------------
         total_seconds = sum(duration_map.values())
-
         subjects = []
+
         for subj in all_subjects:
             duration_seconds = duration_map.get(subj.id, 0)
             percentage = (duration_seconds / total_seconds * 100) if total_seconds > 0 else 0
@@ -129,6 +156,20 @@ class TopicInterestChartAPIView(APIView):
                 "name": subj.name,
                 "percentage": round(percentage, 2)
             })
+        # Optional: sort by percentage descending
+        subjects.sort(key=lambda x: x["percentage"], reverse=True)
+
+        for content in all_main_contents:
+            duration_seconds = duration_map.get(content.title, 0)
+            percentage = (duration_seconds / total_seconds * 100) if total_seconds > 0 else 0
+            subjects.append({
+                "name": content.title,
+                "percentage": round(percentage, 2)
+            })
+
+
+
+        
 
         return api_response(
             message="Topic interest data fetched successfully",
